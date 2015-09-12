@@ -1,0 +1,40 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/PC.hdl
+
+/**
+ * A 16-bit counter with load and reset control bits.
+ * if      (reset[t] == 1) out[t+1] = 0
+ * else if (load[t] == 1)  out[t+1] = in[t]
+ * else if (inc[t] == 1)   out[t+1] = out[t] + 1  (integer addition)
+ * else                    out[t+1] = out[t]
+ * true -> 1, false -> 0
+ */
+
+CHIP PC {
+    IN in[16],load,inc,reset;
+    OUT out[16];
+
+    PARTS:
+    Inc16(in=regout, out=plusone);   // とりあえずレジスタの値をインクリメントする
+    Mux16(a=false, b=plusone, sel=inc, out=outinc);  // inc制御ビットがたっていたら上で+1した結果を返す
+
+    // load
+    // loadが0の場合、インクリメントした値を返す、1の場合、in(新しい値)を返す
+    Mux16(a=outinc, b=in, sel=load, out=outload);
+
+    // reset
+    // resetが1の場合、0を返す. 0の場合は、上でもとめたインクリメントした値か新し値を返す
+    Mux16(a=outload, b=false, sel=reset, out=outreset);
+
+    // reset、load、インクリメントした値をレジスタへ保持させる必要がある為、別途loadbitをもうける
+    Or(a=load, b=reset, out=loadorreset);
+    Or(a=loadorreset, b=inc, out=loadflag);
+
+    // wビットのレジスタ
+    Register(in=outreset, load=loadflag, out=regout); // resetされていれば0、loadが0であればインクリメントした値、1であれば新しい値
+    //Register(in=outreset, load=load, out=regout); // これだとうまくいかない。
+
+    Or16(a=regout, b=regout, out=out);
+}
