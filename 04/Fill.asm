@@ -23,7 +23,7 @@
 
 (STATEZERO)   // state塗りつぶさない
   @state
-  M=1
+  M=0
   @SCREENLOOP
   0;JMP
 
@@ -40,22 +40,33 @@
   D=A
   @counter
   M=D
-  @i        // 描画offset位置
+  @i
   M=0
+  @SCREEN
+  D=A
+  @screen_position
+  M=D
 (LOOP)
   @counter
   M=M-1     // counter -= 1
   D=M
   @END      // 描画し終わったらループ脱出
   D;JEQ
+
   @i
   D=M       // offsetをDレジスタへロード
-  @SCREEN
-  A=D+A     // 16384 + offset番地から描画を開始
-  D=-1       // 1111 1111 1111 1111
-  M=D       // 点描画
+  @screen_position
+  M=D+M     // 描画位置(16384 + offset番地)を退避
+
+  @state
+  D=M       // 1111 1111 1111 1111
+
+  @screen_position
+  A=M       // 点描画
+  M=D
+
   @i
-  M=M+1     // i += 1
+  M=1     // i += 1
   @LOOP
   0;JMP
 (END)
