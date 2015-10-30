@@ -63,12 +63,14 @@ class Parser
   def comp
     if @command.include?("=")
       @command.split("=").last
+    elsif @command.include?(";")
+      @command.split(";").first
     end
   end
 
   def jump
     if @command.include?(";")
-      nil
+      @command.split(";").last
     end
   end
 
