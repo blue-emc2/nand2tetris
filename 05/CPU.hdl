@@ -1,0 +1,84 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input
+ * holds the value of this location. If the current instruction needs
+ * to write a value to M, the value is placed in outM, the address
+ * of the target location is placed in the addressM output, and the
+ * writeM control bit is asserted. (When writeM==0, any value may
+ * appear in outM). The outM and writeM outputs are combinational:
+ * they are affected instantaneously by the execution of the current
+ * instruction. The addressM and pc outputs are clocked: although they
+ * are affected by the execution of the current instruction, they commit
+ * to their new values only in the next time step. If reset==1 then the
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather
+ * than to the address resulting from executing the current instruction.
+ */
+/*
+ * アドレス命令:0vvvvvvvvvvvvvvv
+ * 計算命令:   111accccccdddjjj
+ * A:値を設定する命令
+ * C:複雑なやつ
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution 実行する命令 A命令かC命令
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+                         // 1 現在のプログラムを再実行
+                         // 0 プログラム継続
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M?
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction. program counter.
+
+    PARTS:
+      Not(in=instruction[15], out=Ainstruction);
+      Not(in=Ainstruction, out=Cinstruction);
+
+      // i. A命令(=0)かC命令(=1)を判別する. aは値、bはC命令
+      Mux16(a=out-alu, b=instruction, sel=instruction[15], out=a-or-c);
+
+      // AレジスタにA/C命令をロードする.
+      ARegister(in=a-or-c, load=true, out=in-areg);
+
+      // a. ALUがAレジスタかメモリ入力(M)か、どちらかを操作するか. comp
+      Mux16(a=in-areg, b=inM, sel=instruction[12], out=in-am-reg);
+
+      //
+      DRegister(in=out-alu, load=true, out=in-d-reg);
+
+      // c. ALUがどの関数を実行するか. comp
+      ALU(x=in-am-reg, y=in-d-reg, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=out-alu, zr=outzr, ng=outng);
+
+// --- ここまでが計算関連
+// --- 計算結果をどこに格納するか
+      // d1.
+      ARegister(in=out-alu,load=instruction[5], out=save-areg);
+      // d2.
+      DRegister(in=out-alu, load=instruction[4], out=save-dreg);
+      // d3.
+      Register(in=out-alu, load=instruction[3], out=save-mreg);
+
+//      Or(in=instruction[3], out=writeM);
+
+//      PC(in, inc, load, reset=reset);
+
+//    instruction[0..2] // j
+//    instruction[13..14] // x
+
+}
