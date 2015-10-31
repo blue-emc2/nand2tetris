@@ -3,11 +3,11 @@
 # 主な機能は各アセンブリコマンドをフィールドとシンボルに分解することである
 #
 require "./row.rb"
-require "./code.rb"
+require "./symbol_table.rb"
 
 class Parser
 
-  attr_accessor :asm_file, :command, :type
+  attr_accessor :asm_file, :commands, :command, :symbol_table, :address
 
   COMMANDS = {
     a: :A_COMMAND,
@@ -17,41 +17,22 @@ class Parser
 
   # 入力ファイル/ストリームを開きパースを行う準備をする
   def initialize(file)
-    @asm_file = File.open(file)
+    texts = File.open(file).readlines
+    _codes = texts.select {|code| !skip_line?(code)}.map{|code| code.chomp}
+    @commands = _codes.map{|code| code.empty? ? nil : code}.compact
+    @command = ""
+    @symbol_table = SymbolTable.new
+    @address ||= 0
+  end
+
+  def hasMoreCommands?
+    @commands[@address] ? true : false
   end
 
   def advance
-    instructions = []
-    until hasMoreCommands?
-      row = Row.new(@asm_file.gets)
-      next if row.skip_line?
-
-      @command = row.text
-      @type = commandType
-
-      puts "#{__method__}: #{row.text.inspect}, type:#{type}"
-
-      if @type == :C_COMMAND
-        instruction = "111"
-        instruction << Code.comp(comp)
-        instruction << Code.dest(dest)
-        instruction << Code.jump(jump)
-      else
-        instruction = symbol
-      end
-
-      puts "#{__method__}: instruction:#{instruction}, #{instruction.size}"
-      instructions << instruction
-    end
-    puts "instructions: #{instructions}"
-
-    hack_file_name = File.basename(@asm_file.path, ".*")
-    dir = File.dirname(@asm_file.path)
-
-    hack_file = File.open("#{dir}/org_#{hack_file_name}.hack", "w")
-    instructions.each do |instruction|
-      hack_file.write("#{instruction}\n")
-    end
+    @command = @commands[@address]
+    @address += 1
+    puts "#{__method__}: command:#{@command}, address:#{@address}"
   end
 
   def dest
@@ -75,12 +56,7 @@ class Parser
   end
 
   def symbol
-    # 今はシンボルを見ない
     "%016b" % @command.delete("@").to_i
-  end
-
-  def hasMoreCommands?
-    @asm_file.eof?
   end
 
   def commandType
@@ -92,7 +68,13 @@ class Parser
     when /=|\+|;/
       COMMANDS[:c]
     else
-      raise
+      raise "Do not command: #{@command}"
     end
+  end
+
+  private
+
+  def skip_line?(code)
+    code.gsub(" ", "").empty? || code.include?('//')
   end
 end
