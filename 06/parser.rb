@@ -2,12 +2,11 @@
 # Parser
 # 主な機能は各アセンブリコマンドをフィールドとシンボルに分解することである
 #
-require "./row.rb"
-require "./symbol_table.rb"
+require 'pp'
 
 class Parser
 
-  attr_accessor :asm_file, :commands, :command, :symbol_table, :address
+  attr_accessor :asm_file, :commands, :command, :index
 
   COMMANDS = {
     a: :A_COMMAND,
@@ -18,21 +17,32 @@ class Parser
   # 入力ファイル/ストリームを開きパースを行う準備をする
   def initialize(file)
     texts = File.open(file).readlines
-    _codes = texts.select {|code| !skip_line?(code)}.map{|code| code.chomp}
-    @commands = _codes.map{|code| code.empty? ? nil : code}.compact
+    codes = texts.select{|code| !skip_line?(code)}
+    codes = codes.map do |code|
+      c = code
+      if code.include?("//")
+        c = code.split("//").first
+      end
+      c.gsub(" ", "").chomp
+    end
+
+    @commands = codes.map{|code| code.empty? ? nil : code}.compact
+    puts "#{__method__} size: #{@commands.size}, commands: #{@commands}"
+
     @command = ""
-    @symbol_table = SymbolTable.new
-    @address ||= 0
+    @index = 0
   end
 
+  # まだコマンドは存在する？
   def hasMoreCommands?
-    @commands[@address] ? true : false
+    @commands.size > @index ? true : false
   end
 
+  # 入力から次のコマンドを読み、それを現在のコマンドにする
   def advance
-    @command = @commands[@address]
-    @address += 1
-    puts "#{__method__}: command:#{@command}, address:#{@address}"
+    @command = @commands[@index]
+    puts "#{__method__}: command #{@command}, index #{@index}"
+    @index += 1
   end
 
   def dest
@@ -55,8 +65,14 @@ class Parser
     end
   end
 
+  # 現コマンド@XXX、(XXX)のXXXの部分を返す
   def symbol
-    "%016b" % @command.delete("@").to_i
+    command = @command
+    if command.include?("@")
+      command.delete("@")
+    elsif command.include?("(")
+      command.gsub(/\(|\)/, "")
+    end
   end
 
   def commandType
@@ -68,13 +84,13 @@ class Parser
     when /=|\+|;/
       COMMANDS[:c]
     else
-      raise "Do not command: #{@command}"
+      raise "Do not command: #{@command.inspect}"
     end
   end
 
   private
 
   def skip_line?(code)
-    code.gsub(" ", "").empty? || code.include?('//')
+    code.gsub(" ", "").empty? || code.start_with?('//')
   end
 end

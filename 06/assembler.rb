@@ -3,6 +3,8 @@
 #
 require './parser.rb'
 require "./code.rb"
+require "./symbol_table.rb"
+require 'pp'
 
 class Assembler
 
@@ -10,6 +12,24 @@ class Assembler
     raise "not found asm file!" if argv.size.zero?
 
     parser = Parser.new(argv.first)
+    symbol_table = SymbolTable.new
+    address = 0
+    while parser.hasMoreCommands?
+      parser.advance
+
+      if parser.commandType == :L_COMMAND
+        # ここでは+1しない。なぜなら、バイナリした時にここの擬似コマンドがなくなり、次の命令になるから。
+        symbol_table.add_entry(parser.symbol, address)
+      else
+        address += 1
+      end
+    end
+
+    puts "#{__method__} symbol_table: #{symbol_table.inspect}"
+
+    parser = Parser.new(argv.first)
+
+    variable_address = 16
 
     instructions = []
     while parser.hasMoreCommands?
@@ -22,8 +42,29 @@ class Assembler
         instruction << Code.comp(parser.comp)
         instruction << Code.dest(parser.dest)
         instruction << Code.jump(parser.jump)
-      else
-        instruction = parser.symbol
+      elsif type == :A_COMMAND
+        symbol = parser.symbol
+
+        if symbol_table.contains(symbol)
+          address = symbol_table.get_address(symbol)
+          instruction = "%016b" % address.to_i
+          puts "A_COMMAND 1 address: #{address}, symbol: #{symbol}"
+        else
+          puts "A_COMMAND 2 symbol: #{symbol}"
+
+          if integer_only?(symbol)
+            # 10進数
+            instruction = "%016b" % symbol.to_i
+          else
+            instruction = "%016b" % variable_address.to_i
+            # 変数をシンボルテーブルに追加
+            symbol_table.add_entry(parser.symbol, variable_address)
+            variable_address += 1
+          end
+        end
+      elsif type == :L_COMMAND
+        puts "L_COMMAND symbol: #{parser.symbol}"
+        next
       end
 
       puts "#{__method__}: instruction:#{instruction}, #{instruction.size}"
@@ -42,6 +83,13 @@ class Assembler
     instructions.each do |instruction|
       hack_file.write("#{instruction}\n")
     end
+  end
+
+  def integer_only?(symbol)
+    Integer(symbol)
+    true
+  rescue ArgumentError
+    false
   end
 end
 
