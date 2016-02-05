@@ -36,7 +36,7 @@ class Parser
               COMMANDS[:push]
             when "pop"
               COMMANDS[:pop]
-            when "add"
+            when "eq", "lt", "gt", "sub", "neg", "and", "or", "not", "add"
               COMMANDS[:arithmetic]
             else
               raise "Don't know command: #{current_command.inspect}"

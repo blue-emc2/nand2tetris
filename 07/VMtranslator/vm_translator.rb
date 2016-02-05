@@ -34,7 +34,7 @@ class VMTramslator
       when Parser::COMMANDS[:arithmetic]
         code_writer.write_arithmetic(command)
       else
-        raise "hoge"
+        raise
       end
     end
 
