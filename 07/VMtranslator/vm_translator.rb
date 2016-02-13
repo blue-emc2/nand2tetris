@@ -29,7 +29,7 @@ class VMTramslator
       puts "#{__method__} arg1:#{arg1}, arg2:#{arg2}"
 
       case type
-      when Parser::COMMANDS[:push]
+      when Parser::COMMANDS[:push], Parser::COMMANDS[:pop]
         code_writer.write_push_pop(type, arg1, arg2)
       when Parser::COMMANDS[:arithmetic]
         code_writer.write_arithmetic(command)
@@ -42,5 +42,7 @@ class VMTramslator
   end
 
 end
+
+
 
 VMTramslator.new.run(ARGV)

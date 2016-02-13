@@ -71,7 +71,7 @@ class CodeWriter
   def write_push_pop(command, segment, index)
     asms = []
 
-    asms << "\/\/ -------- #{command} begin " if @debug
+    asms << "\/\/ -------- #{command}, #{segment}, #{index} begin " if @debug
 
     # push: @SPが指すアドレスに値を格納して、SPの指すアドレスをインクリメントする
     if command == Parser::COMMANDS[:push]
@@ -84,9 +84,47 @@ class CodeWriter
       end
     end
 
+    if command == Parser::COMMANDS[:pop]
+      if "local" == segment
+        asms << pop_local(segment)
+      elsif "argument" == segment
+        asms << pop_argument(segment, index)
+      end
+    end
+
     asms << "\/\/ -------- #{command} end " if @debug
 
     write_asm(asms)
+  end
+
+  # spの一番上に積んである値をポップし、segment[index]に格納する
+  def pop_argument(segment, index)
+    [
+      "@#{index}",
+      "D=A",
+      "@ARG",
+      "D=D+M",  # segment[index]番地を値としてもっておく
+      "@segment_index",
+      "M=0",
+      "M=D",
+      dec_sp,
+      "@SP",
+      "A=M",
+      "D=M",
+      "@segment_index",
+      "A=M",
+      "M=A",
+      "M=D"
+    ]
+  end
+
+  # spの一番上に積んである値をlocalにpopする
+  def pop_local(segment)
+    [
+      dec_sp,
+      load_sp,
+      load_lcl
+    ]
   end
 
   # スタックポインタのアドレスをインクリメント
@@ -94,16 +132,9 @@ class CodeWriter
     %w(@SP M=M+1)
   end
 
+  # スタックポインタのアドレスをデクリメント
   def dec_sp
     %w(@SP M=M-1)
-  end
-
-  def load_sp
-    [
-      "@SP",
-      "A=M",
-      "M=D"
-    ]
   end
 
   # x < y true それ以外はfalse
@@ -222,4 +253,17 @@ class CodeWriter
   def close
     @writer.close
   end
+
+  def self.define_load_asm(segment)
+    define_method("load_#{segment}") do
+      %W(@#{segment.swapcase}
+        A=M
+        M=D)
+    end
+  end
+
+  define_load_asm "sp"
+  define_load_asm "lcl"
+  define_load_asm "argument"
+
 end
