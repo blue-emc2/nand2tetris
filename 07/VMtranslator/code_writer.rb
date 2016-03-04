@@ -85,16 +85,39 @@ class CodeWriter
     end
 
     if command == Parser::COMMANDS[:pop]
-      if "local" == segment
+      case segment
+      when "local"
         asms << pop_local(segment)
-      elsif "argument" == segment
+      when "argument"
         asms << pop_argument(segment, index)
+      when "this"
+        asms << pop_this(segment, index)
       end
     end
 
     asms << "\/\/ -------- #{command} end " if @debug
 
     write_asm(asms)
+  end
+
+  def pop_this(segment, index)
+    [
+      "@#{index}",
+      "D=A",
+      "@THIS",
+      "D=D+M",  # segment[index]番地を値としてもっておく
+      "@segment_index_this",
+      "M=0",
+      "M=D",
+      dec_sp,
+      "@SP",
+      "A=M",
+      "D=M",
+      "@segment_index_this",
+      "A=M",
+      "M=A",
+      "M=D"
+    ]
   end
 
   # spの一番上に積んである値をポップし、segment[index]に格納する
