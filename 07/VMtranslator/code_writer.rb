@@ -40,10 +40,13 @@ class CodeWriter
       asms << sub
     when "eq"
       asms << eq
+      @jump_index += 1
     when "lt"
       asms << lt
+      @jump_index += 1
     when "gt"
       asms << gt
+      @jump_index += 1
     when "neg"
       asms << neg
     when "and"
@@ -60,8 +63,6 @@ class CodeWriter
 
     # ＠SPには計算結果が格納済みなので上書きしない為にずらしておく
     asms << inc_sp
-
-    @jump_index += 1
 
     write_asm(asms)
   end
