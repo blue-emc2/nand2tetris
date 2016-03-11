@@ -96,6 +96,10 @@ class CodeWriter
         asms << pop_argument(segment, index)
       when "this"
         asms << pop_this(segment, index)
+      when "that"
+        asms << pop_that(segment, index)
+      when "temp"
+        asms << pop_temp(segment, index)
       end
     end
 
@@ -128,6 +132,40 @@ class CodeWriter
       "D=M",
       load_sp,
       inc_sp
+    ]
+  end
+
+  # temp iは 5 + i 番目のアドレスへとアクセスする アセンブリコードへ変換
+  def pop_temp(segment, index)
+    base_address = 5
+
+    [
+      dec_sp,
+      load_sp,
+      "@#{base_address.to_i + index.to_i}",
+      "M=D"
+    ]
+  end
+
+  def pop_that(segment, index)
+    temp_variable = "@R13"
+
+    [
+      a_command(index),
+      "D=A",
+      a_command("THAT"),
+      "A=M",
+      "AD=D+A",
+      temp_variable,
+      "M=D",
+      dec_sp,
+      "@SP",
+      "A=M",
+      "D=M",
+      temp_variable,
+      "A=M",
+      # "M=A",
+      "M=D"
     ]
   end
 
