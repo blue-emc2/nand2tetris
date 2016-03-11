@@ -170,42 +170,46 @@ class CodeWriter
   end
 
   def pop_this(segment, index)
+    temp_variable = "@R13"
+
     [
-      "@#{index}",
+      a_command(index),
       "D=A",
-      "@THIS",
-      "D=D+M",  # segment[index]番地を値としてもっておく
-      "@segment_index_this",
-      "M=0",
+      a_command("THIS"),
+      "A=M",
+      "AD=D+A",
+      temp_variable,
       "M=D",
       dec_sp,
       "@SP",
       "A=M",
       "D=M",
-      "@segment_index_this",
+      temp_variable,
       "A=M",
-      "M=A",
+      # "M=A",
       "M=D"
     ]
   end
 
   # spの一番上に積んである値をポップし、segment[index]に格納する
   def pop_argument(segment, index)
+    temp_variable = "@R13"
+
     [
-      "@#{index}",
+      a_command(index),
       "D=A",
-      "@ARG",
-      "D=D+M",  # segment[index]番地を値としてもっておく
-      "@segment_index",
-      "M=0",
+      a_command("ARG"),
+      "A=M",
+      "AD=D+A",
+      temp_variable,
       "M=D",
       dec_sp,
       "@SP",
       "A=M",
       "D=M",
-      "@segment_index",
+      temp_variable,
       "A=M",
-      "M=A",
+      # "M=A", なくてもいい感じ
       "M=D"
     ]
   end
@@ -221,12 +225,18 @@ class CodeWriter
 
   # スタックポインタのアドレスをインクリメント
   def inc_sp
-    %w(@SP M=M+1)
+    [
+      a_command("SP"),
+      "M=M+1"
+    ]
   end
 
   # スタックポインタのアドレスをデクリメント
   def dec_sp
-    %w(@SP M=M-1)
+    [
+      a_command("SP"),
+      "M=M-1"
+    ]
   end
 
   # x < y true それ以外はfalse
@@ -344,6 +354,11 @@ class CodeWriter
 
   def close
     @writer.close
+  end
+
+  # 特定の値をAレジスタに格納
+  def a_command(value)
+    "@#{value}"
   end
 
   def self.define_load_asm(segment)
