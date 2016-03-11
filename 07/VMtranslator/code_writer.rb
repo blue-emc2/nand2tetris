@@ -1,10 +1,8 @@
 require "./parser.rb"
 
 # MEMO
-# @SPはtestで256番地を指すようになっている
-# 265  -91
-# 266  82
-# 267  112
+# M -> Memory[A]
+#
 class CodeWriter
 
   TRUE = -1
