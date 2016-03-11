@@ -75,12 +75,17 @@ class CodeWriter
 
     # push: @SPが指すアドレスに値を格納して、SPの指すアドレスをインクリメントする
     if command == Parser::COMMANDS[:push]
-      if "constant" == segment
+      case segment
+      when "constant"
         asms << "@#{index}"
         asms << "D=A"
 
         asms << load_sp
         asms << inc_sp
+      when "local"
+        asms << push_local(segment, index)
+      when "that"
+        asms << push_that(segment, index)
       end
     end
 
@@ -98,6 +103,33 @@ class CodeWriter
     asms << "\/\/ -------- #{command} end " if @debug
 
     write_asm(asms)
+  end
+
+  def push_that(segment, index)
+    [
+      a_command(index),
+      "D=A",
+      a_command("THAT"),
+      "A=M",
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
+  end
+
+  # RAM内の(base + i)番目のアドレスへアクセスするアセンブリコードへ変換
+  def push_local(segment, index)
+    [
+      a_command(index),
+      "D=A",
+      a_command("LCL"),
+      "A=M",  # A=M[@1]
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
   end
 
   def pop_this(segment, index)
