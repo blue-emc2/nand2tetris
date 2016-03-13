@@ -85,6 +85,12 @@ class CodeWriter
         asms << push_local(segment, index)
       when "that"
         asms << push_that(segment, index)
+      when "argument"
+        asms << push_argument(segment, index)
+      when "this"
+        asms << push_this(segment, index)
+      when "temp"
+        asms << push_temp(segment, index)
       end
     end
 
@@ -106,6 +112,46 @@ class CodeWriter
     asms << "\/\/ -------- #{command} end " if @debug
 
     write_asm(asms)
+  end
+
+  def push_temp(segment, index)
+    base_address = "5"
+
+    [
+      a_command(index),
+      "D=A",
+      a_command(base_address),
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
+  end
+
+  def push_this(segment, index)
+    [
+      a_command(index),
+      "D=A",
+      a_command("THIS"),
+      "A=M",
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
+  end
+
+  def push_argument(segment, index)
+    [
+      a_command(index),
+      "D=A",
+      a_command("ARG"),
+      "A=M",
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
   end
 
   def push_that(segment, index)
