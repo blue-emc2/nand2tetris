@@ -183,12 +183,23 @@ class CodeWriter
 
   # temp iは 5 + i 番目のアドレスへとアクセスする アセンブリコードへ変換
   def pop_temp(segment, index)
-    base_address = 5
+    base_address = "5"
+    temp_variable = "@R13"
 
     [
+      a_command(index),
+      "D=A",
+      a_command(base_address),
+      # "A=M",
+      "AD=D+A",
+      temp_variable,
+      "M=D",
       dec_sp,
-      load_sp,
-      "@#{base_address.to_i + index.to_i}",
+      "@SP",
+      "A=M",
+      "D=M",
+      temp_variable,
+      "A=M",
       "M=D"
     ]
   end
