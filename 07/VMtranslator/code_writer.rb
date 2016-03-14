@@ -40,13 +40,10 @@ class CodeWriter
       asms << sub
     when "eq"
       asms << eq
-      @jump_index += 1
     when "lt"
       asms << lt
-      @jump_index += 1
     when "gt"
       asms << gt
-      @jump_index += 1
     when "neg"
       asms << neg
     when "and"
@@ -298,19 +295,19 @@ class CodeWriter
 
   # x < y true それ以外はfalse
   def lt
-    create_load_and_jump_codes("JLT")
+    compare("JLT")
   end
 
   # 引き算して結果をDに格納する。
   # 判定はJMP命令を利用する。
   # JUMP先はindexを付けて変な場所にJUMPしないようにする
   def eq
-    create_load_and_jump_codes("JEQ")
+    compare("JEQ")
   end
 
   # x > yであればtrue それ以外はfalse
   def gt
-    create_load_and_jump_codes("JGT")
+    compare("JGT")
   end
 
   def sub
@@ -369,15 +366,14 @@ class CodeWriter
     ]
   end
 
-  # いいメソッド名が思いつかないけど、処理をまとめたい
+  # 比較処理
   # if x == y
   #   D = true
   # else
   #   D = false
   # end
-  # みたいな事をしている
-  def create_load_and_jump_codes(jmp)
-    [
+  def compare(jmp)
+    asm = [
       dec_sp,
       load_sp,
       dec_sp,
@@ -401,6 +397,9 @@ class CodeWriter
       "(END_#{@jump_index})",
       load_sp
     ]
+
+    @jump_index += 1
+    asm
   end
 
   def write_asm(asms)
