@@ -31,7 +31,7 @@ class CodeWriter
       asms << dec_sp
       asms << load_sp # Mにロード
       asms << dec_sp
-      asms << "@SP"
+      asms << a_command("SP")
       asms << "A=M"
       asms << "D=D+M"
       asms << "M=D"
