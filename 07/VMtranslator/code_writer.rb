@@ -114,7 +114,7 @@ class CodeWriter
 
     [
       a_command(index),
-      "D=A",
+      c_command("D", "A"),
       a_command(base_address),
       "AD=D+A",
       "D=M",
@@ -128,7 +128,7 @@ class CodeWriter
   def push_mem_to_stack(segment, index)
     [
       a_command(index),
-      "D=A",
+      c_command("D", "A"),
       a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",    # A=M[LCL,ARG,THIS,THAT]
       "AD=D+A",
@@ -153,7 +153,7 @@ class CodeWriter
 
     [
       a_command(index),
-      "D=A",
+      c_command("D", "A"),
       a_command(base_address),
       "AD=D+A",
       temp_variable,
@@ -175,7 +175,7 @@ class CodeWriter
 
     [
       a_command(index),
-      "D=A",
+      c_command("D", "A"),
       a_command(base_address),
       "AD=D+A",
       temp_variable,
@@ -195,7 +195,7 @@ class CodeWriter
 
     [
       a_command(index),
-      "D=A",
+      c_command("D", "A"),
       a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",
       "AD=D+A",       # AD = *(base_address + offset)
@@ -215,7 +215,7 @@ class CodeWriter
   def inc_sp
     [
       a_command("SP"),
-      "M=M+1"
+      c_command("M","M+1")
     ]
   end
 
@@ -223,7 +223,7 @@ class CodeWriter
   def dec_sp
     [
       a_command("SP"),
-      "M=M-1"
+      c_command("M", "M-1")
     ]
   end
 
@@ -316,17 +316,17 @@ class CodeWriter
       "@RESULT_TRUE_#{@jump_index}",
       "D;#{jmp}",
       "@RESULT_FALSE_#{@jump_index}",
-      "0;JMP",
+      c_command("0", "JMP"),
 
       "(RESULT_TRUE_#{@jump_index})",
       "D=#{TRUE}",
       "@END_#{@jump_index}",
-      "0;JMP",
+      c_command("0", "JMP"),
 
       "(RESULT_FALSE_#{@jump_index})",
       "D=#{FALSE}",
       "@END_#{@jump_index}",
-      "0;JMP",
+      c_command("0", "JMP"),
 
       "(END_#{@jump_index})",
       load_sp
@@ -352,10 +352,15 @@ class CodeWriter
   end
 
   # havivhaさんのを参考にした
-  # dest：計算用のasm
-  # comp：保存先を決定するasm
-  # jump：ジャンプ命令asm
+  # dest：保存先を決定するregister
+  # comp：計算用のasm
+  # jump：ジャンプ命令
   def c_command(dest, comp, jump=nil)
+    if jump
+      "#{comp};#{jump}"
+    else
+      "#{dest}=#{comp}"
+    end
   end
 
   def self.define_load_asm(segment)
