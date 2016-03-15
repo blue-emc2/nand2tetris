@@ -95,9 +95,7 @@ class CodeWriter
 
     if command == Parser::COMMANDS[:pop]
       case segment
-      when "local"
-        asms << pop_local(segment)
-      when "argument", "this", "that"
+      when "argument", "this", "that", "local"
         asms << pop_mem_to_stack(segment, index)
       when "temp"
         asms << pop_temp(segment, index)
@@ -210,15 +208,6 @@ class CodeWriter
       temp_variable,
       "A=M",
       "M=D"
-    ]
-  end
-
-  # spの一番上に積んである値をlocalにpopする
-  def pop_local(segment)
-    [
-      dec_sp,
-      load_sp,
-      load_lcl
     ]
   end
 
@@ -360,6 +349,13 @@ class CodeWriter
   # 特定の値をAレジスタに格納
   def a_command(value)
     "@#{value}"
+  end
+
+  # havivhaさんのを参考にした
+  # dest：計算用のasm
+  # comp：保存先を決定するasm
+  # jump：ジャンプ命令asm
+  def c_command(dest, comp, jump=nil)
   end
 
   def self.define_load_asm(segment)

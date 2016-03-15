@@ -8,12 +8,19 @@ M=D
 M=M+1
 // -------- C_PUSH end 
 // -------- C_POP, local, 0 begin 
+@0
+D=A
+@LCL
+A=M
+AD=D+A
+@R13
+M=D
 @SP
 M=M-1
 @SP
 A=M
-M=D
-@LCL
+D=M
+@R13
 A=M
 M=D
 // -------- C_POP end 
