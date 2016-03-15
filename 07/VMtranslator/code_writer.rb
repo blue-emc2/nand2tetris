@@ -8,6 +8,13 @@ class CodeWriter
   TRUE = -1
   FALSE = 0
 
+  SEGMENT_TO_REGISTER_MAP = {
+    "local" => "LCL",
+    "argument" => "ARG",
+    "this" => "THIS",
+    "that" => "THAT",
+  }.freeze
+
   attr_accessor :writer, :output_files
 
   def initialize(file)
@@ -64,6 +71,11 @@ class CodeWriter
     write_asm(asms)
   end
 
+  # vmコマンド
+  # push segment index
+  #   segment[index]をスタック上にpush
+  # pop segment index
+  #   スタックの一番上のデータをpopし、それをsegment[index]に格納
   def write_push_pop(command, segment, index)
     asms = []
 
@@ -73,19 +85,9 @@ class CodeWriter
     if command == Parser::COMMANDS[:push]
       case segment
       when "constant"
-        asms << "@#{index}"
-        asms << "D=A"
-
-        asms << load_sp
-        asms << inc_sp
-      when "local"
-        asms << push_local(segment, index)
-      when "that"
-        asms << push_that(segment, index)
-      when "argument"
-        asms << push_argument(segment, index)
-      when "this"
-        asms << push_this(segment, index)
+        asms << push_constant(segment, index)
+      when "local", "that", "argument", "this"
+        asms << push_mem_to_stack(segment, index)
       when "temp"
         asms << push_temp(segment, index)
       end
@@ -103,6 +105,8 @@ class CodeWriter
         asms << pop_that(segment, index)
       when "temp"
         asms << pop_temp(segment, index)
+      when "pointer"
+        asms << pop_pointer(segment, index)
       end
     end
 
@@ -125,12 +129,14 @@ class CodeWriter
     ]
   end
 
-  def push_this(segment, index)
+  # RAM上にマッピングされている、レジスタ（local、argument、this、that）をStackにpushするアセンブラコードを出力する
+  # RAM内の(base + i)番目のアドレスへアクセスするアセンブリコード
+  def push_mem_to_stack(segment, index)
     [
       a_command(index),
       "D=A",
-      a_command("THIS"),
-      "A=M",
+      a_command(SEGMENT_TO_REGISTER_MAP[segment]),
+      "A=M",    # A=M[LCL,ARG,THIS,THAT]
       "AD=D+A",
       "D=M",
       load_sp,
@@ -138,43 +144,33 @@ class CodeWriter
     ]
   end
 
-  def push_argument(segment, index)
+  def push_constant(segment, index)
     [
       a_command(index),
       "D=A",
-      a_command("ARG"),
-      "A=M",
-      "AD=D+A",
-      "D=M",
       load_sp,
       inc_sp
     ]
   end
 
-  def push_that(segment, index)
-    [
-      a_command(index),
-      "D=A",
-      a_command("THAT"),
-      "A=M",
-      "AD=D+A",
-      "D=M",
-      load_sp,
-      inc_sp
-    ]
-  end
+  def pop_pointer(segment, index)
+    base_address = "3"
+    temp_variable = "@R13"
 
-  # RAM内の(base + i)番目のアドレスへアクセスするアセンブリコードへ変換
-  def push_local(segment, index)
     [
       a_command(index),
       "D=A",
-      a_command("LCL"),
-      "A=M",  # A=M[@1]
+      a_command(base_address),
       "AD=D+A",
-      "D=M",
-      load_sp,
-      inc_sp
+      temp_variable,
+      "M=D",
+      dec_sp,
+      a_command("SP"),
+      "A=M",    # A = A[0]
+      "D=M",    # D = A[256]
+      temp_variable,
+      "A=M",    # A = A[@R13]
+      "M=D"     # A[3] = D
     ]
   end
 
@@ -187,7 +183,6 @@ class CodeWriter
       a_command(index),
       "D=A",
       a_command(base_address),
-      # "A=M",
       "AD=D+A",
       temp_variable,
       "M=D",
