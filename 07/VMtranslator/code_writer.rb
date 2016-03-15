@@ -97,12 +97,8 @@ class CodeWriter
       case segment
       when "local"
         asms << pop_local(segment)
-      when "argument"
-        asms << pop_argument(segment, index)
-      when "this"
-        asms << pop_this(segment, index)
-      when "that"
-        asms << pop_that(segment, index)
+      when "argument", "this", "that"
+        asms << pop_mem_to_stack(segment, index)
       when "temp"
         asms << pop_temp(segment, index)
       when "pointer"
@@ -196,69 +192,23 @@ class CodeWriter
     ]
   end
 
-  def pop_that(segment, index)
+  def pop_mem_to_stack(segment, index)
     temp_variable = "@R13"
 
     [
       a_command(index),
       "D=A",
-      a_command("THAT"),
+      a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",
-      "AD=D+A",
-      temp_variable,
-      "M=D",
+      "AD=D+A",       # AD = *(base_address + offset)
+      temp_variable,  # 一時変数
+      "M=D",          # base_address + offsetのアドレスを覚えておく
       dec_sp,
       a_command("SP"),
       "A=M",
       "D=M",
       temp_variable,
       "A=M",
-      # "M=A",
-      "M=D"
-    ]
-  end
-
-  def pop_this(segment, index)
-    temp_variable = "@R13"
-
-    [
-      a_command(index),
-      "D=A",
-      a_command("THIS"),
-      "A=M",
-      "AD=D+A",
-      temp_variable,
-      "M=D",
-      dec_sp,
-      a_command("SP"),
-      "A=M",
-      "D=M",
-      temp_variable,
-      "A=M",
-      # "M=A",
-      "M=D"
-    ]
-  end
-
-  # spの一番上に積んである値をポップし、segment[index]に格納する
-  def pop_argument(segment, index)
-    temp_variable = "@R13"
-
-    [
-      a_command(index),
-      "D=A",
-      a_command("ARG"),
-      "A=M",
-      "AD=D+A",
-      temp_variable,
-      "M=D",
-      dec_sp,
-      a_command("SP"),
-      "A=M",
-      "D=M",
-      temp_variable,
-      "A=M",
-      # "M=A", なくてもいい感じ
       "M=D"
     ]
   end
