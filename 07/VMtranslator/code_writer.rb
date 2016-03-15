@@ -90,6 +90,8 @@ class CodeWriter
         asms << push_mem_to_stack(segment, index)
       when "temp"
         asms << push_temp(segment, index)
+      when "pointer"
+        asms << push_pointer(segment, index)
       end
     end
 
@@ -143,6 +145,20 @@ class CodeWriter
       a_command(index),
       "D=A",
       load_sp,
+      inc_sp
+    ]
+  end
+
+  def push_pointer(segment, index)
+    base_address = "3"
+
+    [
+      a_command(index),         # offset
+      c_command("D", "A"),
+      a_command(base_address),  # base address
+      c_command("AD", "D+A"),   # *(base_address + offset)
+      c_command("D", "M"),
+      load_sp,  # pointerが指す値をstackに格納
       inc_sp
     ]
   end
