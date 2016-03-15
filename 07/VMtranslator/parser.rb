@@ -15,7 +15,7 @@ class Parser
     function: :C_FUNCTION,
     return: :C_RETURN,
     call: :C_CALL
-  }
+  }.freeze
 
   # 入力ファイル/ストリームを開きパースを行う準備をする
   def initialize(file)
