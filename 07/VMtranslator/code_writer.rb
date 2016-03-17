@@ -92,6 +92,8 @@ class CodeWriter
         asms << push_temp(segment, index)
       when "pointer"
         asms << push_pointer(segment, index)
+      when "static"
+        asms << push_static(segment, index)
       end
     end
 
@@ -103,12 +105,28 @@ class CodeWriter
         asms << pop_temp(segment, index)
       when "pointer"
         asms << pop_pointer(segment, index)
+      when "static"
+        asms << pop_static(segment, index)
       end
     end
 
     asms << "\/\/ -------- #{command} end " if @debug
 
     write_asm(asms)
+  end
+
+  # base address => 16
+  def push_static(segment, index)
+    base_address = "16"
+
+    [
+      "D=0",
+      a_command(base_address.to_i + index.to_i),
+      "AD=D+A",
+      "D=M",
+      load_sp,
+      inc_sp
+    ]
   end
 
   def push_temp(segment, index)
@@ -160,6 +178,26 @@ class CodeWriter
       c_command("D", "M"),
       load_sp,  # pointerが指す値をstackに格納
       inc_sp
+    ]
+  end
+
+  def pop_static(segment, index)
+    base_address = 16
+    temp_register = "R13"
+
+    [
+      "D=0",
+      a_command(base_address + index.to_i),
+      "AD=D+A",
+      a_command(temp_register),
+      "M=D",
+      dec_sp,
+      a_command("SP"),
+      "A=M",
+      "D=M",
+      a_command(temp_register),
+      "A=M",
+      "M=D"
     ]
   end
 
