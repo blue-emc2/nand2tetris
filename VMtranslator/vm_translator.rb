@@ -8,13 +8,15 @@ require 'pp'
 class VMTramslator
 
   def run(argv)
-    raise "not found *.vm file!" if argv.size.zero?
+    vm_files = Dir.glob("**/*.vm")
+    vm_file = vm_files.detect{ |file| File.basename(file) == File.basename(argv.first) }
 
-    dir_name = File.dirname(argv.first)
-    base_name = File.basename(argv.first, ".*")
+    dir_name = File.dirname(vm_file)
+    base_name = File.basename(vm_file, ".*")
+
     code_writer = CodeWriter.new("#{dir_name}/#{base_name}.asm")
 
-    parser = Parser.new(argv.first)
+    parser = Parser.new(vm_file)
     while parser.has_more_commands?
       parser.advance
 
