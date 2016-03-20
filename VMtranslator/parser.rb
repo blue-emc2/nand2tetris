@@ -1,5 +1,5 @@
+require './VMtranslator/vm_reader.rb'
 require 'pp'
-require './vm_reader.rb'
 
 class Parser
 

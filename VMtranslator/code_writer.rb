@@ -1,4 +1,4 @@
-require "./parser.rb"
+require "./VMtranslator/parser.rb"
 
 # MEMO
 # M -> Memory[A]

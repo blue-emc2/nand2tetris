@@ -1,8 +1,8 @@
 #
 # メインプログラム
 #
-require './parser.rb'
-require './code_writer.rb'
+require './VMtranslator/parser.rb'
+require './VMtranslator/code_writer.rb'
 require 'pp'
 
 class VMTramslator
