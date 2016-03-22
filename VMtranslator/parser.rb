@@ -31,44 +31,27 @@ class Parser
   def advance
     @reader.next_command
 
-    @type = case current_command
-            when "push"
-              COMMANDS[:push]
-            when "pop"
-              COMMANDS[:pop]
-            when "eq", "lt", "gt", "sub", "neg", "and", "or", "not", "add"
-              COMMANDS[:arithmetic]
-            else
-              raise "Don't know command: #{current_command.inspect}"
-            end
+    @type = COMMANDS[current_command]
+    raise "Don't know command: #{current_command.inspect}" unless @type
 
     unless COMMANDS[:return] == @type
-      if COMMANDS[:arithmetic] == @type
-        arg1(current_command)
-      else
-        arg1
-      end
+      set_arg1(current_command)
     end
 
     if [COMMANDS[:push], COMMANDS[:pop], COMMANDS[:function], COMMANDS[:call]].detect{|sym| sym == @type}
-      puts "arg2 type: #{@type}"
-      arg2
+      set_arg2
     end
   end
 
   def current_command
-    @reader.current_command
+    @reader.current_command.to_sym
   end
 
-  def arg1(command = nil)
-    if command.nil?
-      @arg1 = @reader.arg1
-    else
-      @arg1 = command
-    end
+  def set_arg1(command)
+    @arg1 = (command ? @reader.arg1 : command)
   end
 
-  def arg2
+  def set_arg2
     @arg2 = @reader.arg2
   end
 

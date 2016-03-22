@@ -36,7 +36,7 @@ class VMTramslator
       when Parser::COMMANDS[:arithmetic]
         code_writer.write_arithmetic(command)
       else
-        raise
+        raise "error type:#{type}"
       end
     end
 

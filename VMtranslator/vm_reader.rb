@@ -23,7 +23,7 @@ class VMReader
   def next_command
     commands = @codes.shift
     puts "#{__method__} commands: #{commands}"
-    @current_commands = commands.split unless commands.nil?
+    @current_commands = commands.split if commands
   end
 
   def current_command
