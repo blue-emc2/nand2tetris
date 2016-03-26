@@ -74,7 +74,7 @@ class CodeWriter
     asms << "\/\/ -------- #{command} begin " if @debug
 
     case command
-    when "add"
+    when :add
       asms << dec_sp
       asms << load_sp # Mにロード
       asms << dec_sp
@@ -83,29 +83,28 @@ class CodeWriter
       asms << "D=D+M"
       asms << "M=D"
 
-    when "sub"
+    when :sub
       asms << sub
-    when "eq"
+    when :eq
       asms << eq
-    when "lt"
+    when :lt
       asms << lt
-    when "gt"
+    when :gt
       asms << gt
-    when "neg"
+    when :neg
       asms << neg
-    when "and"
+    when :and
       asms << and_asm
-    when "or"
+    when :or
       asms << or_asm
-    when "not"
+    when :not
       asms << not_asm
     else
-      asms << ""
+      asms << nil
     end
 
     asms << "\/\/ -------- #{command} end " if @debug
 
-    # ＠SPには計算結果が格納済みなので上書きしない為にずらしておく
     asms << inc_sp
 
     write_asm(asms)
@@ -188,7 +187,7 @@ class CodeWriter
   def push_mem_to_stack(segment, index)
     [
       a_command(index),
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",    # A=M[LCL,ARG,THIS,THAT]
       "AD=D+A",
@@ -289,7 +288,7 @@ class CodeWriter
 
     [
       a_command(index),
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",
       "AD=D+A",       # AD = *(base_address + offset)
@@ -305,11 +304,22 @@ class CodeWriter
     ]
   end
 
+  def pop_stack_to_reg(reg)
+    [
+      dec_sp,
+      a_command("SP"),
+      "A=M",
+      "D=M",
+      a_command(reg),
+      "M=D"
+    ]
+  end
+
   # スタックポインタのアドレスをインクリメント
   def inc_sp
     [
       a_command("SP"),
-      c_command("M","M+1")
+      c_command(dest: "M", comp: "M+1")
     ]
   end
 
@@ -317,7 +327,7 @@ class CodeWriter
   def dec_sp
     [
       a_command("SP"),
-      c_command("M", "M-1")
+      c_command(dest: "M", comp: "M-1")
     ]
   end
 
@@ -449,12 +459,16 @@ class CodeWriter
   # dest：保存先を決定するregister
   # comp：計算用のasm
   # jump：ジャンプ命令
-  def c_command(dest, comp, jump=nil)
+  def c_command(dest: nil, comp: nil, jump: nil)
     if jump
       "#{comp};#{jump}"
     else
       "#{dest}=#{comp}"
     end
+  end
+
+  def new_label(label)
+    "(#{label})"
   end
 
   def self.define_load_asm(segment)
