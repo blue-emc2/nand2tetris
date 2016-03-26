@@ -27,7 +27,9 @@ class VMReader
   end
 
   def current_command
-    @current_commands.first
+    c = @current_commands.first
+    return c.sub(/-/, "_") if c == "if-goto"
+    c
   end
 
   def arg1

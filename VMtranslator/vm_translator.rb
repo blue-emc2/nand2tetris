@@ -35,6 +35,10 @@ class VMTramslator
         code_writer.write_push_pop(type, arg1, arg2)
       when Parser::COMMANDS[:arithmetic]
         code_writer.write_arithmetic(command)
+      when Parser::COMMANDS[:label]
+        code_writer.write_label(arg1)
+      when Parser::COMMANDS[:if_goto]
+        code_writer.write_if(arg1)
       else
         raise "error type:#{type}"
       end

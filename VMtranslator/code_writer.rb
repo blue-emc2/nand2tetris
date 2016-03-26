@@ -28,6 +28,46 @@ class CodeWriter
     @output_files << file
   end
 
+  def write_label(label)
+    asms = []
+
+    asms << "\/\/ -------- #{label} begin " if @debug
+    asms << new_label(label)
+    asms << "\/\/ -------- #{label} end " if @debug
+
+    write_asm(asms)
+  end
+
+  def write_if(label)
+    asms = []
+
+    asms << "\/\/ -------- #{label} begin " if @debug
+
+    asms << if_goto(label)
+
+    asms << "\/\/ -------- #{label} end " if @debug
+
+    write_asm(asms)
+  end
+
+  # スタックの最上位の値をポップし、
+  # その値が0でなければ、xxxでラベル付けされた場所からプログラムの実行を開始する。
+  # そうでなければ、プログラムの次のコマンドが実行される。
+  def if_goto(label)
+    asms = pop_stack_to_reg("R13")
+
+    asms += [
+      "D=M",
+      "@#{label}",
+      c_command(comp: "D", jump: "JNE"),    # if D != 0 jump
+      "@#{label}_END",
+      c_command(comp: "0", jump: "JMP"),
+      new_label("#{label}_END"),
+    ]
+
+    asms
+  end
+
   def write_arithmetic(command)
     asms = []
 
