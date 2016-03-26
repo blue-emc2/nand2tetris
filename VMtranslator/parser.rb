@@ -11,7 +11,7 @@ class Parser
     pop: :C_POP,
     label: :C_LABEL,
     goto: :C_GOTO,
-    if: :C_IF,
+    if_goto: :C_IF,
     function: :C_FUNCTION,
     return: :C_RETURN,
     call: :C_CALL
@@ -31,7 +31,12 @@ class Parser
   def advance
     @reader.next_command
 
-    @type = COMMANDS[current_command]
+    if %i(eq lt gt sub neg and or not add).include?(current_command)
+      @type = COMMANDS[:arithmetic]
+    else
+      @type = COMMANDS[current_command]
+    end
+
     raise "Don't know command: #{current_command.inspect}" unless @type
 
     unless COMMANDS[:return] == @type
