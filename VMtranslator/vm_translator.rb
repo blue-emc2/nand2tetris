@@ -39,6 +39,8 @@ class VMTramslator
         code_writer.write_label(arg1)
       when Parser::COMMANDS[:if_goto]
         code_writer.write_if(arg1)
+      when Parser::COMMANDS[:goto]
+        code_writer.write_goto(arg1)
       else
         raise "error type:#{type}"
       end

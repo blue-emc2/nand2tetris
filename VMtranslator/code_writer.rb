@@ -30,7 +30,6 @@ class CodeWriter
 
   def write_label(label)
     asms = []
-
     asms << "\/\/ -------- #{label} begin " if @debug
     asms << new_label(label)
     asms << "\/\/ -------- #{label} end " if @debug
@@ -40,14 +39,27 @@ class CodeWriter
 
   def write_if(label)
     asms = []
-
     asms << "\/\/ -------- #{label} begin " if @debug
-
     asms << if_goto(label)
-
     asms << "\/\/ -------- #{label} end " if @debug
 
     write_asm(asms)
+  end
+
+  def write_goto(label)
+    asms = []
+    asms << "\/\/ -------- #{label} begin " if @debug
+    asms << goto(label)
+    asms << "\/\/ -------- #{label} end " if @debug
+
+    write_asm(asms)
+  end
+
+  def goto(label)
+    [
+      a_command(label),
+      c_command(comp: "0", jump: "JMP"),
+    ]
   end
 
   # スタックの最上位の値をポップし、
