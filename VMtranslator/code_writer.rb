@@ -70,9 +70,9 @@ class CodeWriter
 
     asms += [
       "D=M",
-      "@#{label}",
+      a_command(label),
       c_command(comp: "D", jump: "JNE"),    # if D != 0 jump
-      "@#{label}_END",
+      a_command("#{label}_END"),
       c_command(comp: "0", jump: "JMP"),
       new_label("#{label}_END"),
     ]
@@ -223,10 +223,10 @@ class CodeWriter
 
     [
       a_command(index),         # offset
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(base_address),  # base address
-      c_command("AD", "D+A"),   # *(base_address + offset)
-      c_command("D", "M"),
+      c_command(dest: "AD", comp: "D+A"),   # *(base_address + offset)
+      c_command(dest: "D", comp: "M"),
       load_sp,  # pointerが指す値をstackに格納
       inc_sp
     ]
@@ -243,13 +243,7 @@ class CodeWriter
       a_command(temp_register),
       "M=D",
       dec_sp,
-      a_command("SP"),
-      "A=M",
-      "D=M",
-      a_command(temp_register),
-      "A=M",
-      "M=D"
-    ]
+    ] + set_stack_to_reg(temp_variable)
   end
 
   def pop_pointer(segment, index)
@@ -258,19 +252,13 @@ class CodeWriter
 
     [
       a_command(index),
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(base_address),
       "AD=D+A",
       temp_variable,
       "M=D",
       dec_sp,
-      a_command("SP"),
-      "A=M",    # A = A[0]
-      "D=M",    # D = A[256]
-      temp_variable,
-      "A=M",    # A = A[@R13]
-      "M=D"     # A[3] = D
-    ]
+    ] + set_stack_to_reg(temp_variable)
   end
 
   # temp iは 5 + i 番目のアドレスへとアクセスする アセンブリコードへ変換
@@ -280,19 +268,13 @@ class CodeWriter
 
     [
       a_command(index),
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(base_address),
       "AD=D+A",
       temp_variable,
       "M=D",
       dec_sp,
-      a_command("SP"),
-      "A=M",
-      "D=M",
-      temp_variable,
-      "A=M",
-      "M=D"
-    ]
+    ] + set_stack_to_reg(temp_variable)
   end
 
   def pop_mem_to_stack(segment, index)
@@ -307,12 +289,17 @@ class CodeWriter
       temp_variable,  # 一時変数
       "M=D",          # base_address + offsetのアドレスを覚えておく
       dec_sp,
+    ] + set_stack_to_reg(temp_variable)
+  end
+
+  def set_stack_to_reg(register)
+    [
       a_command("SP"),
-      "A=M",
-      "D=M",
-      temp_variable,
-      "A=M",
-      "M=D"
+      "A=M",    # A = A[0]
+      "D=M",    # D = A[256]
+      register,
+      "A=M",    # A = A[@R13]
+      "M=D"     # A[3] = D
     ]
   end
 
