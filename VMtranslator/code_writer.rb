@@ -104,13 +104,13 @@ class CodeWriter
     when :gt
       asms << gt
     when :neg
-      asms << neg
+      asms << unary_asm("-M")
     when :and
       asms << and_asm
     when :or
       asms << or_asm
     when :not
-      asms << not_asm
+      asms << unary_asm("!M")
     else
       asms << nil
     end
@@ -385,20 +385,12 @@ class CodeWriter
     ]
   end
 
-  def not_asm
+  # 単項式を出力するアセンブラ
+  def unary_asm(operator_comp)
     [
       dec_sp,
       load_sp,
-      "D=!M",
-      load_sp
-    ]
-  end
-
-  def neg
-    [
-      dec_sp,
-      load_sp,
-      "D=-M",
+      "D=#{operator_comp}",
       load_sp
     ]
   end
