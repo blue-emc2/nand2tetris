@@ -204,7 +204,7 @@ class CodeWriter
     if command == Parser::COMMANDS[:push]
       case segment
       when "constant"
-        asms << push_constant(segment, index)
+        asms << push_constant(index)
       when "local", "that", "argument", "this"
         asms << push_mem_to_stack(segment, index)
       when "temp"
@@ -277,9 +277,9 @@ class CodeWriter
     ]
   end
 
-  def push_constant(segment, index)
+  def push_constant(value)
     [
-      a_command(index),
+      a_command(value),
       "D=A",
       load_sp,
       inc_sp
@@ -310,43 +310,40 @@ class CodeWriter
       "AD=D+A",
       a_command(temp_register),
       "M=D",
-      dec_sp,
     ] + set_stack_to_reg(temp_variable)
   end
 
   def pop_pointer(segment, index)
     base_address = "3"
-    temp_variable = "@R13"
+    temp_variable = "R13"
 
     [
       a_command(index),
       c_command(dest: "D", comp: "A"),
       a_command(base_address),
       "AD=D+A",
-      temp_variable,
+      a_command(temp_variable),
       "M=D",
-      dec_sp,
     ] + set_stack_to_reg(temp_variable)
   end
 
   # temp iは 5 + i 番目のアドレスへとアクセスする アセンブリコードへ変換
   def pop_temp(segment, index)
     base_address = "5"
-    temp_variable = "@R13"
+    temp_variable = "R13"
 
     [
       a_command(index),
       c_command(dest: "D", comp: "A"),
       a_command(base_address),
       "AD=D+A",
-      temp_variable,
+      a_command(temp_variable),
       "M=D",
-      dec_sp,
     ] + set_stack_to_reg(temp_variable)
   end
 
   def pop_mem_to_stack(segment, index)
-    temp_variable = "@R13"
+    temp_variable = "R13"
 
     [
       a_command(index),
@@ -354,30 +351,31 @@ class CodeWriter
       a_command(SEGMENT_TO_REGISTER_MAP[segment]),
       "A=M",
       "AD=D+A",       # AD = *(base_address + offset)
-      temp_variable,  # 一時変数
+      a_command(temp_variable),  # 一時変数
       "M=D",          # base_address + offsetのアドレスを覚えておく
-      dec_sp,
     ] + set_stack_to_reg(temp_variable)
   end
 
   def set_stack_to_reg(register)
     [
+      dec_sp,
       a_command("SP"),
       "A=M",    # A = A[0]
       "D=M",    # D = A[256]
-      register,
+      a_command(register),
       "A=M",    # A = A[@R13]
       "M=D"     # A[3] = D
     ]
   end
 
-  def pop_stack_to_reg(reg)
+  # 最上位stackから値を取得し、引数のレジスタに値を格納
+  def pop_stack_to_reg(register)
     [
       dec_sp,
       a_command("SP"),
       "A=M",
       "D=M",
-      a_command(reg),
+      a_command(register),
       "M=D"
     ]
   end
