@@ -41,6 +41,10 @@ class VMTramslator
         code_writer.write_if(arg1)
       when Parser::COMMANDS[:goto]
         code_writer.write_goto(arg1)
+      when Parser::COMMANDS[:function]
+        code_writer.write_function(arg1, arg2)
+      when Parser::COMMANDS[:return]
+        code_writer.write_return
       else
         raise "error type:#{type}"
       end

@@ -31,6 +31,71 @@ class CodeWriter
     @output_files << file
   end
 
+  # NOTE: returnする時のスタックの状態
+  # function用引数アドレス開始位置
+  # リターンアドレス
+  # 保存されたLCL
+  # 保存されたLCL
+  # 保存されたARG
+  # 保存されたTHIS
+  # 保存されたTHAT
+  # function内ローカル変数アドレス開始位置
+  # function内SP
+  def write_return
+    asms = []
+    asms << "\/\/ -------- return begin " if @debug
+
+    # FRAME(R13) = LCL
+    asms += set_regster_to_regster(SEGMENT_TO_REGISTER_MAP["local"], "R13")
+
+    # RET = *(FRAME-5) リターンアドレスを取得
+    asms += frame_to_register("R13", "5", "R14")
+
+    # *ARG = pop()  戻り値を設定
+    asms += set_stack_to_reg(SEGMENT_TO_REGISTER_MAP["argument"])
+
+    # SP = ARG + 1  呼び出し側のSPを戻す（アドレス計算）
+    asms += [
+      a_command("ARG"),
+      c_command(dest: "AD", comp: "M+1"),
+      a_command("SP"),
+      c_command(dest: "M", comp: "D"),
+    ]
+
+    # 呼び出し側のTHAT, THIS, ARG, LCLを戻す
+    asms += frame_to_register("R13", "1", SEGMENT_TO_REGISTER_MAP["that"])
+    asms += frame_to_register("R13", "2", SEGMENT_TO_REGISTER_MAP["this"])
+    asms += frame_to_register("R13", "3", SEGMENT_TO_REGISTER_MAP["argument"])
+    asms += frame_to_register("R13", "4", SEGMENT_TO_REGISTER_MAP["local"])
+
+    # fanction return
+    asms += [
+      a_command("R14"),
+      c_command(dest: "A", comp: "M"),
+      c_command(comp: "0", jump: "JMP"),
+    ]
+
+    asms << "\/\/ -------- return end " if @debug
+    write_asm(asms)
+  end
+
+  # name: 関数名
+  # num_locals: 関数内のローカル変数の個数
+  def write_function(name, num_locals)
+    asms = []
+    asms << "\/\/ -------- function #{name} begin " if @debug
+
+    asms << new_label(name) # 関数の開始位置とする為のラベル
+
+    # 引数を初期化
+    num_locals.to_i.times do |i|
+      asms << push_constant(0)
+    end
+
+    asms << "\/\/ -------- function #{name} end " if @debug
+    write_asm(asms)
+  end
+
   def write_label(label)
     asms = []
     asms << "\/\/ -------- #{label} begin " if @debug
