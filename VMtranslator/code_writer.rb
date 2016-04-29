@@ -1,9 +1,12 @@
 require "./VMtranslator/parser.rb"
+require "./VMtranslator/common_codes.rb"
 
 # MEMO
 # M -> Memory[A]
 #
 class CodeWriter
+
+  include CommonCodes
 
   TRUE = -1
   FALSE = 0
@@ -439,27 +442,6 @@ class CodeWriter
 
   def close
     @writer.close
-  end
-
-  # 特定の値をAレジスタに格納
-  def a_command(value)
-    "@#{value}"
-  end
-
-  # havivhaさんのを参考にした
-  # dest：保存先を決定するregister
-  # comp：計算用のasm
-  # jump：ジャンプ命令
-  def c_command(dest: nil, comp: nil, jump: nil)
-    if jump
-      "#{comp};#{jump}"
-    else
-      "#{dest}=#{comp}"
-    end
-  end
-
-  def new_label(label)
-    "(#{label})"
   end
 
   def self.define_load_asm(segment)
