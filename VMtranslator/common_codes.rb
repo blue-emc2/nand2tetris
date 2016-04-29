@@ -22,4 +22,25 @@ module CommonCodes
     "(#{label})"
   end
 
+  def frame_to_register(src, offset, dest)
+    [
+      a_command(src),
+      c_command(dest: "D", comp: "M"),
+      a_command(offset),
+      c_command(dest: "AD", comp: "D-A"),
+      c_command(dest: "D", comp: "M"),
+      a_command(dest),
+      c_command(dest: "M", comp: "D")
+    ]
+  end
+
+  def set_regster_to_regster(src, dest)
+    [
+      a_command(src),
+      c_command(dest: "AD", comp: "M"),
+      a_command(dest),
+      c_command(dest: "M", comp: "D"),
+    ]
+  end
+
 end
