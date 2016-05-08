@@ -22,6 +22,13 @@ module CommonCodes
     "(#{label})"
   end
 
+  def goto(label)
+    [
+      a_command(label),
+      c_command(comp: "0", jump: "JMP"),
+    ]
+  end
+
   def frame_to_register(src, offset, dest)
     [
       a_command(src),
