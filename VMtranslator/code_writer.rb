@@ -12,6 +12,7 @@ class CodeWriter
   FALSE = 0
 
   SEGMENT_TO_REGISTER_MAP = {
+    "sp" => "SP",
     "local" => "LCL",
     "argument" => "ARG",
     "this" => "THIS",
@@ -75,7 +76,6 @@ class CodeWriter
       c_command(comp: "0", jump: "JMP"),
     ]
 
-    asms << "\/\/ -------- return end " if @debug
     write_asm(asms)
   end
 
@@ -92,7 +92,6 @@ class CodeWriter
       asms << push_constant(0)
     end
 
-    asms << "\/\/ -------- function #{name} end " if @debug
     write_asm(asms)
   end
 
@@ -100,7 +99,6 @@ class CodeWriter
     asms = []
     asms << "\/\/ -------- #{label} begin " if @debug
     asms << new_label(label)
-    asms << "\/\/ -------- #{label} end " if @debug
 
     write_asm(asms)
   end
@@ -109,7 +107,6 @@ class CodeWriter
     asms = []
     asms << "\/\/ -------- #{label} begin " if @debug
     asms << if_goto(label)
-    asms << "\/\/ -------- #{label} end " if @debug
 
     write_asm(asms)
   end
@@ -118,16 +115,8 @@ class CodeWriter
     asms = []
     asms << "\/\/ -------- #{label} begin " if @debug
     asms << goto(label)
-    asms << "\/\/ -------- #{label} end " if @debug
 
     write_asm(asms)
-  end
-
-  def goto(label)
-    [
-      a_command(label),
-      c_command(comp: "0", jump: "JMP"),
-    ]
   end
 
   # スタックの最上位の値をポップし、
@@ -155,14 +144,7 @@ class CodeWriter
 
     case command
     when :add
-      asms << dec_sp
-      asms << load_sp # Mにロード
-      asms << dec_sp
-      asms << a_command("SP")
-      asms << "A=M"
-      asms << "D=D+M"
-      asms << "M=D"
-
+      asms << add
     when :sub
       asms << sub
     when :eq
@@ -182,8 +164,6 @@ class CodeWriter
     else
       asms << nil
     end
-
-    asms << "\/\/ -------- #{command} end " if @debug
 
     asms << inc_sp
 
@@ -229,8 +209,6 @@ class CodeWriter
       end
     end
 
-    asms << "\/\/ -------- #{command} end " if @debug
-
     write_asm(asms)
   end
 
@@ -253,7 +231,7 @@ class CodeWriter
 
     [
       a_command(index),
-      c_command("D", "A"),
+      c_command(dest: "D", comp: "A"),
       a_command(base_address),
       "AD=D+A",
       "D=M",
@@ -413,6 +391,18 @@ class CodeWriter
     compare("JGT")
   end
 
+  def add
+    [
+      dec_sp,
+      load_sp,
+      dec_sp,
+      a_command("SP"),
+      "A=M",
+      "D=D+M",
+      load_sp,
+    ]
+  end
+
   def sub
     [
       dec_sp,
@@ -477,17 +467,17 @@ class CodeWriter
       "@RESULT_TRUE_#{@jump_index}",
       "D;#{jmp}",
       "@RESULT_FALSE_#{@jump_index}",
-      c_command("0", "JMP"),
+      c_command(comp: "0", jump: "JMP"),
 
       "(RESULT_TRUE_#{@jump_index})",
       "D=#{TRUE}",
       "@END_#{@jump_index}",
-      c_command("0", "JMP"),
+      c_command(comp: "0", jump: "JMP"),
 
       "(RESULT_FALSE_#{@jump_index})",
       "D=#{FALSE}",
       "@END_#{@jump_index}",
-      c_command("0", "JMP"),
+      c_command(comp: "0", jump: "JMP"),
 
       "(END_#{@jump_index})",
       load_sp
@@ -497,6 +487,7 @@ class CodeWriter
     asm
   end
 
+  # TODO: いちいち呼ぶ必要ない
   def write_asm(asms)
     asms.flatten.each do |asm|
       @writer.write("#{asm}\n")
@@ -518,5 +509,13 @@ class CodeWriter
   define_load_asm "sp"
   define_load_asm "lcl"
   define_load_asm "argument"
+
+  private
+
+  def label_index
+    _label = "label_#{@label_index}"
+    @label_index += 1
+    _label
+  end
 
 end
