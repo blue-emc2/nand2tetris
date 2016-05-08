@@ -26,10 +26,85 @@ class CodeWriter
     @output_files = [file]
     @debug = true
     @jump_index = 0
+    @label_index = 0
   end
 
   def set_file_name(file)
     @output_files << file
+  end
+
+  # ブートストラップコード
+  # SP=256
+  # call Sys.init
+  def write_init
+    asms = [
+      a_command("256"),
+      c_command(dest: "D", comp: "A"),
+      a_command("0"),
+      c_command(dest: "M", comp: "D"),
+      call("Sys.init")
+    ]
+
+    write_asm(asms)
+  end
+
+  def write_call(function_name, num_locals=0)
+    asms = []
+    asms << "\/\/ -------- begin write_call #{function_name}, #{num_locals} " if @debug
+    asms += call(function_name, num_locals)
+    write_asm(asms)
+  end
+
+  def call(function_name, num_locals=0)
+    asms = []
+    return_address = label_index
+    # push return address
+    asms += push_constant(return_address)
+
+    asms += [
+      push("local"),
+      push("argument"),
+      push("this"),
+      push("that")
+    ]
+
+    # ARG = SP - n - 5
+    offset = (-num_locals.to_i) - 5
+    offset = offset.abs if offset < 0
+
+    asms += [
+      a_command(offset),
+      c_command(dest: "D", comp: "A"),
+      a_command(SEGMENT_TO_REGISTER_MAP["sp"]),
+      c_command(dest: "D", comp: "M-D"),
+      a_command(SEGMENT_TO_REGISTER_MAP["argument"]),
+      c_command(dest: "M", comp: "D"),
+    ]
+
+    # LCL = SP
+    asms += [
+      a_command(SEGMENT_TO_REGISTER_MAP["sp"]),
+      c_command(dest: "D", comp: "M"),
+      a_command(SEGMENT_TO_REGISTER_MAP["local"]),
+      c_command(dest: "M", comp: "D"),
+    ]
+
+    asms += [
+      goto(function_name),
+      new_label(return_address)
+    ]
+  end
+
+  def push(segment)
+    [
+      a_command("0"),
+      c_command(dest: "D", comp: "A"),
+      a_command(SEGMENT_TO_REGISTER_MAP[segment]),
+      c_command(dest: "AD", comp: "D+A"),
+      c_command(dest: "D", comp: "M"),
+      load_sp,
+      inc_sp
+    ]
   end
 
   # NOTE: returnする時のスタックの状態
@@ -53,14 +128,26 @@ class CodeWriter
     asms += frame_to_register("R13", "5", "R14")
 
     # *ARG = pop()  戻り値を設定
-    asms += set_stack_to_reg(SEGMENT_TO_REGISTER_MAP["argument"])
+    asms += [
+      dec_sp,
+      a_command(SEGMENT_TO_REGISTER_MAP["argument"]),
+      c_command(dest: "AD", comp: "M"),
+      a_command("R15"),
+      c_command(dest: "M", comp: "D"),
+      a_command(SEGMENT_TO_REGISTER_MAP["sp"]),
+      "A=M",
+      "D=M",
+      a_command("R15"),
+      "A=M",
+      "M=D",
+      a_command(SEGMENT_TO_REGISTER_MAP["argument"]),
+      c_command(dest: "D", comp: "M"),
+    ]
 
     # SP = ARG + 1  呼び出し側のSPを戻す（アドレス計算）
     asms += [
-      a_command("ARG"),
-      c_command(dest: "AD", comp: "M+1"),
       a_command("SP"),
-      c_command(dest: "M", comp: "D"),
+      c_command(dest: "M", comp: "D+1"),
     ]
 
     # 呼び出し側のTHAT, THIS, ARG, LCLを戻す
