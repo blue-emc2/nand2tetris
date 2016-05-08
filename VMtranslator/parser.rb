@@ -1,5 +1,4 @@
 require './VMtranslator/vm_reader.rb'
-require 'pp'
 
 class Parser
 
@@ -18,8 +17,11 @@ class Parser
   }.freeze
 
   # 入力ファイル/ストリームを開きパースを行う準備をする
-  def initialize(file)
-    @reader = VMReader.new(file)
+  def initialize(files)
+    @reader = VMReader.new
+    files.each do |file|
+      @reader.open(file)
+    end
   end
 
   # まだコマンドは存在する？

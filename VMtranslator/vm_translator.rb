@@ -3,20 +3,28 @@
 #
 require './VMtranslator/parser.rb'
 require './VMtranslator/code_writer.rb'
-require 'pp'
 
 class VMTramslator
 
+  # Xxx.vm という名前のファイル
+  # ひとつ以上の.vm ファイルを含んだディレクトリのパス
   def run(argv)
-    vm_files = Dir.glob("**/*.vm")
-    vm_file = vm_files.detect{ |file| File.basename(file) == File.basename(argv.first) }
+    source = argv.first
+    dir_name = File.dirname(source)
+    base_name = File.basename(source, ".*")
 
-    dir_name = File.dirname(vm_file)
-    base_name = File.basename(vm_file, ".*")
+    if File.directory?(source)
+      output_file = "#{dir_name}/#{base_name}/#{base_name}.asm"
+      vm_files = Dir.glob("#{source}/*.vm").map{|path| path.gsub("//", "/") }
+    else
+      output_file = "#{dir_name}/#{base_name}.asm"
+      vm_files = [source]
+    end
 
-    code_writer = CodeWriter.new("#{dir_name}/#{base_name}.asm")
+    code_writer = CodeWriter.new(output_file)
+    code_writer.write_init
 
-    parser = Parser.new(vm_file)
+    parser = Parser.new(vm_files)
     while parser.has_more_commands?
       parser.advance
 
@@ -45,6 +53,8 @@ class VMTramslator
         code_writer.write_function(arg1, arg2)
       when Parser::COMMANDS[:return]
         code_writer.write_return
+      when Parser::COMMANDS[:call]
+        code_writer.write_call(arg1, arg2)
       else
         raise "error type:#{type}"
       end

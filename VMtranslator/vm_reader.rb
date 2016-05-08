@@ -6,8 +6,11 @@ class VMReader
 
   attr_accessor :codes, :current_commands
 
-  def initialize(file)
-    @codes = []
+  def initialize
+    @codes ||= []
+  end
+
+  def open(file)
     File.open(file).each_line do |code|
       next if skip_line?(code)
       @codes << code.chomp
