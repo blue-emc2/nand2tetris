@@ -11,7 +11,11 @@ class VMTramslator
   def run(argv)
     source = argv.first
     dir_name = File.dirname(source)
-    base_name = File.basename(source, ".*")
+    if argv[1]
+      base_name = argv[1]
+    else
+      base_name = File.basename(source, ".*")
+    end
 
     if File.directory?(source)
       output_file = "#{dir_name}/#{base_name}/#{base_name}.asm"
@@ -20,6 +24,8 @@ class VMTramslator
       output_file = "#{dir_name}/#{base_name}.asm"
       vm_files = [source]
     end
+
+    puts "#{__method__} output_file: #{output_file}"
 
     code_writer = CodeWriter.new(output_file)
     code_writer.write_init
