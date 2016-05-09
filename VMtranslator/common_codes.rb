@@ -34,7 +34,7 @@ module CommonCodes
       a_command(src),
       c_command(dest: "D", comp: "M"),
       a_command(offset),
-      c_command(dest: "AD", comp: "D-A"),
+      c_command(dest: "A", comp: "D-A"),
       c_command(dest: "D", comp: "M"),
       a_command(dest),
       c_command(dest: "M", comp: "D")
@@ -44,7 +44,7 @@ module CommonCodes
   def set_regster_to_regster(src, dest)
     [
       a_command(src),
-      c_command(dest: "AD", comp: "M"),
+      c_command(dest: "D", comp: "M"),
       a_command(dest),
       c_command(dest: "M", comp: "D"),
     ]

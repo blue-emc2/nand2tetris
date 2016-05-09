@@ -125,7 +125,13 @@ class CodeWriter
     asms += set_regster_to_regster(SEGMENT_TO_REGISTER_MAP["local"], "R13")
 
     # RET = *(FRAME-5) リターンアドレスを取得
-    asms += frame_to_register("R13", "5", "R14")
+    asms += [
+      a_command("5"),
+      c_command(dest: "A", comp: "D-A"),
+      c_command(dest: "D", comp: "M"),
+      a_command("R14"),
+      c_command(dest: "M", comp: "D")
+    ]
 
     # *ARG = pop()  戻り値を設定
     asms += [
@@ -481,7 +487,9 @@ class CodeWriter
   def add
     [
       dec_sp,
-      load_sp,
+      a_command("SP"),
+      "A=M",
+      "D=M",
       dec_sp,
       a_command("SP"),
       "A=M",
