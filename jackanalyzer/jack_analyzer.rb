@@ -15,50 +15,24 @@ class JackAnalyzer
       base_name = File.basename(source, ".*")
     end
 
-    output_directory = "#{dir_name}/#{base_name}Test/"
     output_file_name = "#{base_name}.xml"
 
     if File.directory?(source)
+      output_directory = "#{dir_name}/#{base_name}Test/"
       Dir.mkdir(output_directory) unless Dir.exist?(output_directory)
       jack_files = Dir.glob("#{source}/*.jack").map{|path| path.gsub("//", "/") }
     else
+      output_directory = "#{dir_name}Test/"
       jack_files = [source]
     end
 
     puts "#{__method__} output_file: #{output_directory}, #{output_file_name}, #{jack_files}"
 
     jack_files.each do |jack_file|
-      writer = File.open("#{output_directory}#{File.basename(jack_file, ".*")}T.xml", "w")
-      writer.puts("<tokens>\r")
+      parser = File.open("#{output_directory}#{File.basename(jack_file, ".*")}.xml", "w")
 
       tokenizer = JackTokenizer.new(jack_file)
-
-      while tokenizer.has_more_commands?
-        tokenizer.advance
-
-        # token_typeでtypeとtokenを一度に返せるが本のとおりに実装する
-        type = tokenizer.token_type
-        token = case type
-                when :keyword
-                  tokenizer.keyword
-                when :symbol
-                  tokenizer.symbol
-                when :identifier
-                  tokenizer.identifier
-                when :integerConstant
-                  tokenizer.int_val
-                when :stringConstant
-                  tokenizer.string_val
-                else
-                  puts "error: #{type.inspect}, #{token.inspect}"
-                end
-
-        # puts "type: #{type}"
-        # puts "token: #{token}"
-        writer.puts("<#{type}> #{token} </#{type}>\r")
-      end
-
-      writer.puts("</tokens>\r")
+      engine = CompilationEngine.new(tokenizer, parser)
     end
   end
 end
