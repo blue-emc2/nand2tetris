@@ -1,5 +1,7 @@
 module JackConstants
 
+  T_SYM = "symbol"
+
   SYMBOLS = %w({ } ( ) [ ] . , ; + - * / & < > = ~)
 
   CLASS = 'class'

@@ -4,18 +4,19 @@
 # 見通しが悪くなってきたら字句解析の部分だけでも外に出していいかも
 #
 
-require "./jackanalyzer/jack_constants.rb"
+require_relative 'jackanalyzer/jack_constants'
 
 class JackTokenizer
 
   include JackConstants
 
-  attr_accessor :current_token
+  attr_accessor :current_token, :position
 
   def initialize(jack_file)
     @tokens = []
     @debug = true
     @symbol_regexp = Regexp.union(SYMBOLS.map{|symbol| Regexp.compile("(#{Regexp.escape(symbol)})")})   # /({)/の配列を作成している
+    @position = 0
     open(jack_file)
   end
 
@@ -30,7 +31,8 @@ class JackTokenizer
   end
 
   def remove_comments(file)
-    file.gsub(%r(//.+|/\*.+\*/|/\*\*.+\*/), "").gsub(Regexp.new("//\*\*.+?\*/", Regexp::MULTILINE), "")
+    f = file.gsub(%r(//.+|/\*.+\*/|/\*\*.+\*/), "")
+    f.gsub(Regexp.new("/\\*\\*.+?\\*/", Regexp::MULTILINE), "")
   end
 
   def has_more_commands?
@@ -38,22 +40,31 @@ class JackTokenizer
   end
 
   def advance
-    @current_token = @tokens.shift
+    @current_token = @tokens.at(@position)
+    @position += 1
   end
 
-  def token_type
-    if @current_token =~ /\A\".+\"\Z/
+  def advance_at(index)
+    @tokens.at(index)
+  end
+
+  def token_type(token=nil)
+    unless token
+      token = @current_token
+    end
+
+    if token =~ /\A\".+\"\Z/
       :stringConstant
-    elsif @current_token =~ /\A\d+/
+    elsif token =~ /\A\d+/
       :integerConstant
-    elsif SYMBOLS.include?(@current_token)
+    elsif SYMBOLS.include?(token)
       :symbol
-    elsif KEYWORDS.include?(@current_token)
+    elsif KEYWORDS.include?(token)
       :keyword
-    elsif @current_token =~ /\w/
+    elsif token =~ /\w/
       :identifier
     else
-      puts "--- #{@current_token.inspect}"
+      puts "--- #{token.inspect}"
       "error"
     end
   end
