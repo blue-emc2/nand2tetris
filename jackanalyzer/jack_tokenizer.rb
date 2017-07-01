@@ -4,7 +4,7 @@
 # 見通しが悪くなってきたら字句解析の部分だけでも外に出していいかも
 #
 
-require "./jackanalyzer/jack_constants.rb"
+require_relative "jack_constants"
 
 class JackTokenizer
 
@@ -30,7 +30,7 @@ class JackTokenizer
   end
 
   def remove_comments(file)
-    file.gsub(%r(//.+|/\*.+\*/|/\*\*.+\*/), "").gsub(Regexp.new("//\*\*.+?\*/", Regexp::MULTILINE), "")
+    file.gsub(%r(//.+|/\*.+\*/|/\*\*.+\*/), "").gsub(Regexp.new("//\*.\*/", Regexp::MULTILINE), "")
   end
 
   def has_more_commands?
