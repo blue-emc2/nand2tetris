@@ -1,6 +1,6 @@
 module JackConstants
 
-  SYMBOLS = %w({ } ( ) [ ] . , ; + - * / & < > = ~)
+  SYMBOLS = %w({ } ( ) [ ] . , ; + - * / & < > = ~ |)
 
   CLASS = 'class'
   CONSTRUCTOR = 'constructor'

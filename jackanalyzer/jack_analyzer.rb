@@ -3,6 +3,7 @@
 #
 
 require_relative "jack_tokenizer"
+require_relative "jack_compilation_engine"
 
 class JackAnalyzer
 
@@ -54,12 +55,14 @@ class JackAnalyzer
                   puts "error: #{type.inspect}, #{token.inspect}"
                 end
 
-        # puts "type: #{type}"
-        # puts "token: #{token}"
         writer.puts("<#{type}> #{token} </#{type}>\r")
       end
 
       writer.puts("</tokens>\r")
+      writer.flush
+
+      compiled_file_writer = File.open("#{output_directory}#{File.basename(jack_file, ".*")}.xml", "w")
+      CompilationEngine.new(writer.path, compiled_file_writer)
     end
   end
 end
