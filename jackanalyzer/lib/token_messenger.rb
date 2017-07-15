@@ -20,8 +20,8 @@ class TokenMessenger
     token_exist = @stack.include?(token)
 
     if token_exist  # 既に非終端記号がある時は削除し、インデントを上げて閉じるタグを生成する
-      tag = "#{indent}</#{token}>"
       @space -= 1
+      tag = "#{indent}</#{token}>"
       @stack.delete(token)
     else
       tag = "#{indent}<#{token}>"
@@ -42,7 +42,7 @@ class TokenMessenger
 
   def token(position)
     _a, token, _b = @tokens[position]&.split
-
+    puts "token: #{_a}, #{token}, #{_b}"
     return nil unless token
     token
   end

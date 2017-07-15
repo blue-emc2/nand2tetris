@@ -16,11 +16,11 @@ class CompilationEngine
     compiled_token_stack << @token_messenger.non_terminal("class")
 
     loop do
-      token = @token_messenger.current_token
-      puts token
-      case token
+      case @token_messenger.current_token
       when "static", "field"
         compiled_token_stack << compile_class_var_dec
+      when "constructor", "function", "method"
+        compiled_token_stack << compile_subroutine_dec
       when "</tokens>", nil
         break
       else
@@ -34,19 +34,37 @@ class CompilationEngine
     compiled_token_stack.each do |token|
       @compiled_file.puts(token)
     end
+  end
 
-    exit
+  def generate(non_terminal_tag, next_non_terminal_words, *compile_methods)
+    tokens = []
+    tokens << @token_messenger.non_terminal(non_terminal_tag)
+
+    loop do
+      case @token_messenger.current_token
+      when "</tokens>", nil
+        break
+      when *next_non_terminal_words
+        tokens << @token_messenger.non_terminal(non_terminal_tag)
+        break if compile_methods.compact.empty?
+
+        compile_methods.each do |method|
+          tokens << send(method)
+        end
+        break
+      else
+        tokens << @token_messenger.terminal
+      end
+    end
+
+    tokens
   end
 
   def compile_class_var_dec
-    class_var_dec_tokens = []
-    class_var_dec_tokens << @token_messenger.non_terminal("classVarDec")
+    generate("classVarDec", [";"], nil)
+  end
 
-    loop do
-      class_var_dec_tokens << @token_messenger.terminal
-      break if [";", "</tokens>"].include?(@token_messenger.current_token)
-    end
-
-    class_var_dec_tokens
+  def compile_subroutine_dec
+    generate("subroutineDec", ["("], nil)
   end
 end
