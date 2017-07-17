@@ -1,15 +1,17 @@
 class TokenMessenger
 
+  attr_accessor :position
+
   def initialize(tokens)
-    @current_line_pos = 0
+    @position = 0
     @space = 0
     @tokens = tokens
     @stack = []
   end
 
   def terminal
-    token = @tokens[@current_line_pos]
-    @current_line_pos += 1
+    # token = @tokens[@position]
+    token = @tokens.shift
 
     "#{indent}#{token}"
   end
@@ -33,16 +35,18 @@ class TokenMessenger
   end
 
   def current_token
-    token(@current_line_pos)
+    token(@position)
   end
 
   def look_ahead_token
-    token(@current_line_pos + 1)
+    token(@position + 1)
   end
+
+  private
 
   def token(position)
     _a, token, _b = @tokens[position]&.split
-    puts "token: #{_a}, #{token}, #{_b}"
+    # puts "token: #{_a}, #{token}, #{_b}"
     return nil unless token
     token
   end
