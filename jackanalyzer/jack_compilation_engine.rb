@@ -1,22 +1,108 @@
-require_relative "lib/token_messenger"
+require_relative "jack_lexer"
+require_relative "token"
 
 class CompilationEngine
 
+  class SymtaxError < StandardError; end
+
   def initialize(input, output)
-    @token_messenger = TokenMessenger.new(File.readlines(input)[1..-1])
+#    @token_messenger = TokenMessenger.new(File.readlines(input)[1..-1])
 
     @lexer = JackLexer.new(File.readlines(input))
-    @compiled_tokens = []
+    @token = @lexer.current_token
+    @tokens = []
 
     compile_class()
 
-    @compiled_tokens.each do |token|
-      output.puts(token)
+    @tokens.each do |token|
+      puts "-------------------"
+      puts "tokens : #{token.to_markup}"
+      #output.puts(token)
     end
   end
 
   def compile_class
-    @lexer.compile_class
+    keyword(JackLexer::CLASS)
+
+#    identifier
+#    
+#    symbol(Lexer.L_BRACES)
+#
+#    compile_class_var_dec
+#
+#    compile_subroutine_dec
+#
+#    symbol(Lexer.R_BRACES)
+
+#    while @token != Lexer.EOF
+#      @token = @lexer.advance
+#    end
+#
+#    tokens = []
+#    if match_keyword?("class")
+#      tokens << @lexer.verified_token
+#    end
+#
+#    @lexer.match_keyword?
+#
+#    if match_identifier?("Main")
+#      tokens << @lexer.verified_token
+#    end
+  end
+
+  def compile_class_var_dec
+    # static | field
+    # type
+    # var name
+    # (',')*
+    # ';'
+  end
+
+  def compile_subroutine_dec
+    # ('constructor' | 'function' | 'method')
+    # ('void' | type)
+    # subroutineName
+    # '('
+    parameter_list
+    # ')'
+    subroutine_body
+  end
+
+  def parameter_list
+   # (t)?
+   # t = (type varName) (',' type varName)*
+  end
+
+  def subroutine_body
+    # '{'
+    # varDec* statements
+    # '}'
+  end
+
+  private
+
+  def keyword(text)
+    if match?(text)
+      push_tokens_and_advance
+    end
+  end
+
+  def match?(text)
+    puts "match?  token: #{@token}, text: #{text}"
+    if @token.token == text
+      return true
+    else
+      raise SyntaxError, "expecting #{text.inspect}; found #{@token.inspect}"
+    end
+  end
+
+  def push_tokens_and_advance
+    @tokens << @lexer.current_token
+    @lexer.advance
+  end
+
+  def match_identifier?(token)
+    @lexer.match?(token)
   end
 
 =begin
