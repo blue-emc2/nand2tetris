@@ -6,16 +6,14 @@ class CompilationEngine
   class SymtaxError < StandardError; end
 
   def initialize(input, output)
-#    @token_messenger = TokenMessenger.new(File.readlines(input)[1..-1])
-
     @lexer = JackLexer.new(File.readlines(input))
     @token = @lexer.current_token
     @tokens = []
 
     compile_class()
-
+      
+    puts "-------------------"
     @tokens.each do |token|
-      puts "-------------------"
       puts "tokens : #{token.to_markup}"
       #output.puts(token)
     end
@@ -24,11 +22,11 @@ class CompilationEngine
   def compile_class
     keyword(JackLexer::CLASS)
 
-#    identifier
-#    
-#    symbol(Lexer.L_BRACES)
-#
-#    compile_class_var_dec
+    identifier
+    
+    symbol(JackLexer::L_BRACES)
+
+    compile_class_var_dec
 #
 #    compile_subroutine_dec
 #
@@ -81,14 +79,48 @@ class CompilationEngine
 
   private
 
+  def compile_class_var_dec
+    while(@token.token == JackLexer::STATIC)
+      push_tokens_and_advance
+      type
+      var_name
+      # (',' varName)* TODO:あとで実装
+      symbol(JackLexer::SEMICOLON)
+    end
+  end
+
+  def type
+    if JackLexer::TYPES.include?(@token)
+      push_tokens_and_advance
+      return
+    end
+
+    # class name
+    identifier
+  end
+
+  def var_name
+    identifier
+  end
+
   def keyword(text)
     if match?(text)
       push_tokens_and_advance
     end
   end
 
+  def identifier
+    push_tokens_and_advance
+  end
+
+  def symbol(text)
+    if match?(text)
+      push_tokens_and_advance
+    end
+  end
+
   def match?(text)
-    puts "match?  token: #{@token}, text: #{text}"
+    puts "match?  token: #{@token.inspect}, text: #{text.inspect}"
     if @token.token == text
       return true
     else
@@ -98,7 +130,7 @@ class CompilationEngine
 
   def push_tokens_and_advance
     @tokens << @lexer.current_token
-    @lexer.advance
+    @token = @lexer.advance   # 次のトークンを受け取っておく
   end
 
   def match_identifier?(token)
@@ -179,9 +211,6 @@ class CompilationEngine
     tokens
   end
 
-  def compile_class_var_dec
-    generate("classVarDec", {"\;" => nil})
-  end
 
   def compile_subroutine_dec
     generate("subroutineDec", {
