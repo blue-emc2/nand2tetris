@@ -23,8 +23,12 @@ module JackConstants
   ELSE = 'else'
   WHILE = 'while'
   RETURN = 'return'
-  L_BRACES = '{'
+
+  L_BRACE = '{'
+  R_BRACE = '}'
   SEMICOLON = ';'
+  L_ROUND_BRACKET = '('
+  R_ROUND_BRACKET = ')'
 
   KEYWORDS = [
     CLASS,
@@ -51,5 +55,6 @@ module JackConstants
   ]
   
   TYPES = %w(int char boolean)
+  SUBROUTINE_KEYWORDS = [CONSTRUCTOR, FUNCTION, METHOD]
 
 end

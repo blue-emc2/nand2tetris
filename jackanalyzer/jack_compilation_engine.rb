@@ -24,12 +24,12 @@ class CompilationEngine
 
     identifier
     
-    symbol(JackLexer::L_BRACES)
+    symbol(JackLexer::L_BRACE)
 
     compile_class_var_dec
-#
-#    compile_subroutine_dec
-#
+
+    compile_subroutine
+
 #    symbol(Lexer.R_BRACES)
 
 #    while @token != Lexer.EOF
@@ -48,22 +48,27 @@ class CompilationEngine
 #    end
   end
 
-  def compile_class_var_dec
-    # static | field
-    # type
-    # var name
-    # (',')*
-    # ';'
-  end
+  def compile_subroutine
+    while(JackLexer::SUBROUTINE_KEYWORDS.include?(@token.token))
+      push_tokens_and_advance
 
-  def compile_subroutine_dec
-    # ('constructor' | 'function' | 'method')
-    # ('void' | type)
-    # subroutineName
-    # '('
-    parameter_list
-    # ')'
-    subroutine_body
+      if match?(JackLexer::VOID)
+        push_tokens_and_advance
+      else 
+        type
+      end
+
+      # subroutineName
+      identifier
+
+      symbol(JackLexer::L_ROUND_BRACKET)
+
+      parameter_list
+
+      symbol(JackLexer::R_ROUND_BRACKET)
+
+      subroutine_body
+    end
   end
 
   def parameter_list
@@ -72,12 +77,10 @@ class CompilationEngine
   end
 
   def subroutine_body
-    # '{'
-    # varDec* statements
-    # '}'
+    symbol(JackLexer::L_BRACE)
+    var_dec
+    #symbol(JackLexer::R_BRACE)
   end
-
-  private
 
   def compile_class_var_dec
     while(@token.token == JackLexer::STATIC)
@@ -101,6 +104,14 @@ class CompilationEngine
 
   def var_name
     identifier
+  end
+
+  def var_dec
+    keyword(JackLexer::VAR)
+    type
+    var_name
+    # (',' varName)* TODO:あとで実装
+    symbol(JackLexer::SEMICOLON)
   end
 
   def keyword(text)
