@@ -21,15 +21,4 @@ class JackLexer
       @current_token = Token.new(@tokens[@p])
     end
   end
-
-#  def match?(text)
-#    puts "match?: #{@current_token == token}, look_ahead_token : #{get_token_from_look_ahead_token}, text : #{text}"
-#    if get_text_from_look_ahead_token == text
-#      advance
-#      return true
-#    else
-#      raise SyntaxError, "expecting #{text.inspect}; found #{@current_token.inspect}"
-#    end
-#  end
-
 end

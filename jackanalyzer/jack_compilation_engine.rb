@@ -10,9 +10,17 @@ class CompilationEngine
     @token = @lexer.current_token
     @tokens = []
 
-    compile_class()
+    begin
+      compile_class()
+    rescue SyntaxError => e
+      puts "#{e.message}, #{e.backtrace}"
+    end
       
     puts "-------------------"
+    output_tokens
+  end
+
+  def output_tokens
     @tokens.each do |token|
       puts "tokens : #{token.to_markup}"
       #output.puts(token)
@@ -30,22 +38,7 @@ class CompilationEngine
 
     compile_subroutine
 
-#    symbol(Lexer.R_BRACES)
-
-#    while @token != Lexer.EOF
-#      @token = @lexer.advance
-#    end
-#
-#    tokens = []
-#    if match_keyword?("class")
-#      tokens << @lexer.verified_token
-#    end
-#
-#    @lexer.match_keyword?
-#
-#    if match_identifier?("Main")
-#      tokens << @lexer.verified_token
-#    end
+    symbol(JackLexer::R_BRACE)
   end
 
   def compile_subroutine
@@ -63,7 +56,7 @@ class CompilationEngine
 
       symbol(JackLexer::L_ROUND_BRACKET)
 
-      parameter_list
+      compile_parameter_list
 
       symbol(JackLexer::R_ROUND_BRACKET)
 
@@ -71,15 +64,20 @@ class CompilationEngine
     end
   end
 
-  def parameter_list
+  def compile_parameter_list
    # (t)?
    # t = (type varName) (',' type varName)*
   end
 
   def subroutine_body
     symbol(JackLexer::L_BRACE)
-    var_dec
-    #symbol(JackLexer::R_BRACE)
+
+    while(match?(JackLexer::VAR))
+      var_dec
+    end
+
+    compile_statements
+    symbol(JackLexer::R_BRACE)
   end
 
   def compile_class_var_dec
@@ -97,9 +95,8 @@ class CompilationEngine
       push_tokens_and_advance
       return
     end
-
-    # class name
-    identifier
+    
+    identifier # class name TODO:クラス名検索
   end
 
   def var_name
@@ -110,14 +107,18 @@ class CompilationEngine
     keyword(JackLexer::VAR)
     type
     var_name
+
     # (',' varName)* TODO:あとで実装
+    if match?(JackLexer::COMMA)
+      push_tokens_and_advance
+      var_name
+    end
+
     symbol(JackLexer::SEMICOLON)
   end
 
   def keyword(text)
-    if match?(text)
-      push_tokens_and_advance
-    end
+    match(text)
   end
 
   def identifier
@@ -125,18 +126,126 @@ class CompilationEngine
   end
 
   def symbol(text)
+    match(text)
+  end
+
+  def compile_let
+    push_tokens_and_advance
+    var_name
+
+    # ([expression])?
+    if match?(JackLexer::L_SQUARE_BRACKETS)
+      push_tokens_and_advance
+      compile_expression
+      symbol(JackLexer::R_SQUARE_BRACKETS)
+    end
+    
+    symbol(JackLexer::EQ)
+    compile_expression
+    symbol(JackLexer::SEMICOLON)
+  end
+
+  def compile_expression
+    compile_term
+
+    # (op term)*
+    while(current_token_include?(JackLexer::OPERATIONS))
+      push_tokens_and_advance
+      compile_term
+    end
+  end
+
+  def compile_expression_list
+  end
+
+  def compile_statements
+    while(current_token_include?(JackLexer::STATEMENT_WORDS))
+      statement
+    end
+  end
+
+  def statement
+    case @token.token
+    when JackLexer::LET
+      compile_let
+    when JackLexer::DO
+      compile_do
+    when JackLexer::RETURN
+      compile_return
+    when JackLexer::IF
+      compile_if
+    else
+      raise StandardError
+    end
+  end
+
+  def compile_term
+    case @token.token
+    when JackLexer::KEYWORD_CONSTANT
+      push_tokens_and_advance
+    when /[:digit:]/
+      push_tokens_and_advance
+    else
+      identifier
+    end
+  end
+
+  def compile_do
+    keyword(JackLexer::DO)
+    subroutine_call
+    symbol(JackLexer::SEMICOLON)
+  end
+
+  def subroutine_call
+    identifier # subroutineName
+    # (expression list) | (class name | var name) TODO:あとで実装
+    symbol(JackLexer::DOT)
+    identifier # subroutineName
+    symbol(JackLexer::L_ROUND_BRACKET)
+    compile_expression_list
+    symbol(JackLexer::R_ROUND_BRACKET)
+  end
+
+  def compile_return
+    keyword(JackLexer::RETURN)
+    # expression? TODO:あとで実装
+    symbol(JackLexer::SEMICOLON)
+  end
+
+  def compile_if
+    match(JackLexer::IF)
+    symbol(JackLexer::L_ROUND_BRACKET)
+    compile_expression
+    symbol(JackLexer::R_ROUND_BRACKET)
+
+    symbol(JackLexer::L_BRACE)
+    compile_statements
+    symbol(JackLexer::R_BRACE)
+
+    if match?(JackLexer::ELSE)
+      push_tokens_and_advance
+      symbol(JackLexer::L_BRACE)
+      compile_statements
+      symbol(JackLexer::R_BRACE)
+    end
+  end
+
+  # アルファベット、数字、アンダースコアの文字列
+  def identifier?
+  end
+
+  # 名前が微妙だが例外を投げたい
+  def match(text)
     if match?(text)
       push_tokens_and_advance
+    else
+      raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
     end
   end
 
   def match?(text)
-    puts "match?  token: #{@token.inspect}, text: #{text.inspect}"
-    if @token.token == text
-      return true
-    else
-      raise SyntaxError, "expecting #{text.inspect}; found #{@token.inspect}"
-    end
+    puts "match? token: #{@token.inspect}, text: #{text.inspect}"
+    @token.token == text
   end
 
   def push_tokens_and_advance
@@ -144,8 +253,9 @@ class CompilationEngine
     @token = @lexer.advance   # 次のトークンを受け取っておく
   end
 
-  def match_identifier?(token)
-    @lexer.match?(token)
+  def current_token_include?(texts)
+    puts "current_token_include: args=#{texts}, token=#{@token.token}"
+    texts&.include?(@token.token)
   end
 
 =begin
