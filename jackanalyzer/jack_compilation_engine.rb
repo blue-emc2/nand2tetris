@@ -17,17 +17,12 @@ class CompilationEngine
     end
       
     puts "-------------------"
-    output_tokens
-  end
-
-  def output_tokens
-    @tokens.each do |token|
-      puts "tokens : #{token.to_markup}"
-      #output.puts(token)
-    end
+    output_tokens(output)
   end
 
   def compile_class
+    push_non_terminal("class")
+
     keyword(JackLexer::CLASS)
 
     identifier
@@ -39,10 +34,13 @@ class CompilationEngine
     compile_subroutine
 
     symbol(JackLexer::R_BRACE)
+    
+    push_non_terminal("/class")
   end
 
   def compile_subroutine
     while(JackLexer::SUBROUTINE_KEYWORDS.include?(@token.token))
+      push_non_terminal("subroutineDec")
       push_tokens_and_advance
 
       if match?(JackLexer::VOID)
@@ -61,15 +59,19 @@ class CompilationEngine
       symbol(JackLexer::R_ROUND_BRACKET)
 
       subroutine_body
+      push_non_terminal("/subroutineDec")
     end
   end
 
   def compile_parameter_list
-   # (t)?
-   # t = (type varName) (',' type varName)*
+    push_non_terminal("parameterList")
+    # (t)?
+    # t = (type varName) (',' type varName)*
+    push_non_terminal("/parameterList")
   end
 
   def subroutine_body
+    push_non_terminal("subroutineBody")
     symbol(JackLexer::L_BRACE)
 
     while(match?(JackLexer::VAR))
@@ -78,9 +80,11 @@ class CompilationEngine
 
     compile_statements
     symbol(JackLexer::R_BRACE)
+    push_non_terminal("/subroutineBody")
   end
 
   def compile_class_var_dec
+    push_non_terminal("classVarDec")
     while(@token.token == JackLexer::STATIC)
       push_tokens_and_advance
       type
@@ -88,6 +92,7 @@ class CompilationEngine
       # (',' varName)* TODO:あとで実装
       symbol(JackLexer::SEMICOLON)
     end
+    push_non_terminal("/classVarDec")
   end
 
   def type
@@ -104,6 +109,7 @@ class CompilationEngine
   end
 
   def var_dec
+    push_non_terminal("varDec")
     keyword(JackLexer::VAR)
     type
     var_name
@@ -115,21 +121,11 @@ class CompilationEngine
     end
 
     symbol(JackLexer::SEMICOLON)
-  end
-
-  def keyword(text)
-    match(text)
-  end
-
-  def identifier
-    push_tokens_and_advance
-  end
-
-  def symbol(text)
-    match(text)
+    push_non_terminal("/varDec")
   end
 
   def compile_let
+    push_non_terminal("letStatement")
     push_tokens_and_advance
     var_name
 
@@ -143,9 +139,11 @@ class CompilationEngine
     symbol(JackLexer::EQ)
     compile_expression
     symbol(JackLexer::SEMICOLON)
+    push_non_terminal("/letStatement")
   end
 
   def compile_expression
+    push_non_terminal("expression")
     compile_term
 
     # (op term)*
@@ -153,33 +151,24 @@ class CompilationEngine
       push_tokens_and_advance
       compile_term
     end
+    push_non_terminal("/expression")
   end
 
   def compile_expression_list
+    push_non_terminal("expressionList")
+    push_non_terminal("/expressionList")
   end
 
   def compile_statements
+    push_non_terminal("statements")
     while(current_token_include?(JackLexer::STATEMENT_WORDS))
       statement
     end
-  end
-
-  def statement
-    case @token.token
-    when JackLexer::LET
-      compile_let
-    when JackLexer::DO
-      compile_do
-    when JackLexer::RETURN
-      compile_return
-    when JackLexer::IF
-      compile_if
-    else
-      raise StandardError
-    end
+    push_non_terminal("/statements")
   end
 
   def compile_term
+    push_non_terminal("term")
     case @token.token
     when JackLexer::KEYWORD_CONSTANT
       push_tokens_and_advance
@@ -188,12 +177,15 @@ class CompilationEngine
     else
       identifier
     end
+    push_non_terminal("/term")
   end
 
   def compile_do
+    push_non_terminal("doStatement")
     keyword(JackLexer::DO)
     subroutine_call
     symbol(JackLexer::SEMICOLON)
+    push_non_terminal("/doStatement")
   end
 
   def subroutine_call
@@ -207,12 +199,17 @@ class CompilationEngine
   end
 
   def compile_return
+    push_non_terminal("returnStatement")
+
     keyword(JackLexer::RETURN)
     # expression? TODO:あとで実装
     symbol(JackLexer::SEMICOLON)
+
+    push_non_terminal("/returnStatement")
   end
 
   def compile_if
+    push_non_terminal("ifStatement")
     match(JackLexer::IF)
     symbol(JackLexer::L_ROUND_BRACKET)
     compile_expression
@@ -228,10 +225,38 @@ class CompilationEngine
       compile_statements
       symbol(JackLexer::R_BRACE)
     end
+    push_non_terminal("/ifStatement")
+  end
+  
+  def statement
+    case @token.token
+    when JackLexer::LET
+      compile_let
+    when JackLexer::DO
+      compile_do
+    when JackLexer::RETURN
+      compile_return
+    when JackLexer::IF
+      compile_if
+    else
+      raise StandardError
+    end
   end
 
   # アルファベット、数字、アンダースコアの文字列
   def identifier?
+  end
+
+  def keyword(text)
+    match(text)
+  end
+
+  def identifier
+    push_tokens_and_advance
+  end
+
+  def symbol(text)
+    match(text)
   end
 
   # 名前が微妙だが例外を投げたい
@@ -258,108 +283,38 @@ class CompilationEngine
     texts&.include?(@token.token)
   end
 
-=begin
-  def compile_class
-    compiled_token_stack = []
-
-    # class tag
-    compiled_token_stack << @token_messenger.non_terminal("class")
-
-    compiled_token_stack << @token_messenger.terminal
-    compiled_token_stack << @token_messenger.terminal
-    compiled_token_stack << @token_messenger.terminal
-
-
-    loop do
-      token = @token_messenger.look_ahead_token
-      puts "token: #{token}"
-      case token
-      # when "static", "field"
-      #   compiled_token_stack << compile_class_var_dec
-      # when "constructor", "function", "method"
-      #   compiled_token_stack << compile_subroutine_dec
-      when "</tokens>", nil
-        break
-      else
-        # class, class name, {
-        # compiled_token_stack << @token_messenger.terminal
-      end
-
-      @token_messenger.position += 1
-    end
-
-    compiled_token_stack << @token_messenger.non_terminal("class")
-
-    compiled_token_stack.each do |token|
-      @compiled_file.puts(token)
-    end
+  def push_non_terminal(tag)
+    @tokens << Token.new(tag, terminal: false)
   end
 
-  def generate(non_terminal_tag=nil, token_key_call_methods={})
-    keys = token_key_call_methods.keys
-    tokens = []
+  def output_tokens(output)
+    space_count = 0
+    nonterminal_stack = []
 
-    if block_given?
-      tokens << yield
-      return tokens
-    end
+    @tokens.each do |token|
+      unless token.terminal
+        if nonterminal_stack.last == token.token
+          nonterminal_stack.pop
+          space_count -= 1 # 出力する前にインデントを上げる
 
-    tokens << @token_messenger.non_terminal(non_terminal_tag)
-    tokens << @token_messenger.terminal
-
-    loop do
-      token = @token_messenger.current_token
-      puts "#generate token : #{token}, #{keys}, #{keys.include?(token)}"
-      case token
-      when "</tokens>", nil
-        break
-      when *keys
-        tokens << @token_messenger.terminal
-        if token_key_call_methods[token]
-          # tokenに対応するメソッドを呼び出す
-          tokens << send("compile_#{token_key_call_methods[token]}")
-        end
-
-        tokens << @token_messenger.non_terminal(non_terminal_tag)
-        break
-      else
-        tokens << @token_messenger.terminal
-      end
-
-      # @token_messenger.position += 1
-    end
-
-    tokens
-  end
-
-
-  def compile_subroutine_dec
-    generate("subroutineDec", {
-      "(" => :parameter_list,
-      ")" => :subroutine_body
-    })
-  end
-
-  # <parameterList> ... </parameterList>を返す
-  def compile_parameter_list
-    generate do
-      tokens = []
-      tokens << @token_messenger.non_terminal("parameterList")
-
-      loop do
-        case @token_messenger.look_ahead_token
-        when ")"
-          tokens << @token_messenger.non_terminal("parameterList")
-          break
+          output.puts(add_indent_to(token.to_xml, space_count))
+          puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
         else
-          tokens << @token_messenger.terminal
+          output.puts(add_indent_to(token.to_xml, space_count))
+          puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
+
+          nonterminal_stack.push(token.token)
+          space_count += 1  # 出力してからインデントを下げる
         end
-
-        # @token_messenger.position += 1
+      else
+        output.puts(add_indent_to(token.to_xml, space_count))
+        puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
       end
-
-      tokens
     end
   end
-=end
+
+  def add_indent_to(tag, space_count)
+    space = " " * (2 * space_count)
+    "#{space}#{tag}"
+  end
 end

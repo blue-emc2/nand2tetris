@@ -1,14 +1,25 @@
 class Token
 
-  attr_accessor :terminal, :token
+  attr_accessor :token, :terminal
 
-  def initialize(text, _terminal=true, options={})
-    @tag_start, @token, @tag_end = text.split
-    @terminal = _terminal
+  def initialize(text, terminal: true)
+    @text = text
+
+    if terminal
+      @tag_start, @token, @tag_end = text.chomp.split 
+    else
+      @token = text.delete("/")
+    end
+
+    @terminal = terminal
   end
 
-  def to_markup
-    "#{@tag_start} #{@token} #{@tag_end}"
+  def to_xml
+    if @terminal
+      "#{@tag_start} #{@token} #{@tag_end}"
+    else
+      "<#{@text}>"
+    end
   end
 end
 
