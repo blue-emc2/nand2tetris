@@ -15,10 +15,21 @@ class JackLexer
 
   def advance
     @p += 1
-    if @tokens[@p].nil?
-      @current_token = Token.new(EOF)
-    else
-      @current_token = Token.new(@tokens[@p])
-    end
+    @current_token = get_token(@p)
   end
+
+  def next_token
+    np = @p + 1
+    get_token(np)
+  end
+
+  private
+
+  def get_token(position)
+    if @tokens[position].nil?
+      Token.new(EOF)
+    else
+      Token.new(@tokens[position])
+    end
+  end 
 end
