@@ -38,8 +38,20 @@ class CompilationEngine
     push_non_terminal("/class")
   end
 
+  def compile_class_var_dec
+    while(current_token_include?([JackLexer::STATIC, JackLexer::FIELD]))
+      push_non_terminal("classVarDec")
+      push_tokens_and_advance
+      type
+      var_name
+      # (',' varName)* TODO:あとで実装
+      symbol(JackLexer::SEMICOLON)
+      push_non_terminal("/classVarDec")
+    end
+  end
+
   def compile_subroutine
-    while(JackLexer::SUBROUTINE_KEYWORDS.include?(@token.token))
+    while(current_token_include?(JackLexer::SUBROUTINE_KEYWORDS))
       push_non_terminal("subroutineDec")
       push_tokens_and_advance
 
@@ -83,18 +95,6 @@ class CompilationEngine
     push_non_terminal("/subroutineBody")
   end
 
-  def compile_class_var_dec
-    push_non_terminal("classVarDec")
-    while(@token.token == JackLexer::STATIC)
-      push_tokens_and_advance
-      type
-      var_name
-      # (',' varName)* TODO:あとで実装
-      symbol(JackLexer::SEMICOLON)
-    end
-    push_non_terminal("/classVarDec")
-  end
-
   def type
     if JackLexer::TYPES.include?(@token)
       push_tokens_and_advance
@@ -130,10 +130,10 @@ class CompilationEngine
     var_name
 
     # ([expression])?
-    if match?(JackLexer::L_SQUARE_BRACKETS)
+    if match?(JackLexer::L_SQUARE_BRACKET)
       push_tokens_and_advance
       compile_expression
-      symbol(JackLexer::R_SQUARE_BRACKETS)
+      symbol(JackLexer::R_SQUARE_BRACKET)
     end
     
     symbol(JackLexer::EQ)
@@ -154,8 +154,16 @@ class CompilationEngine
     push_non_terminal("/expression")
   end
 
+  # (expression (',' expression)* )?
   def compile_expression_list
     push_non_terminal("expressionList")
+
+    unless match?(JackLexer::R_ROUND_BRACKET)
+      puts "@@@ #{@token.token}"
+      compile_expression
+    # (',' expression)* TODO あとで実装する
+    end
+
     push_non_terminal("/expressionList")
   end
 
@@ -174,6 +182,8 @@ class CompilationEngine
       push_tokens_and_advance
     when /[:digit:]/
       push_tokens_and_advance
+    when JackLexer::BRACKETS
+      raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
     else
       identifier
     end
@@ -189,21 +199,34 @@ class CompilationEngine
   end
 
   def subroutine_call
-    identifier # subroutineName
-    # (expression list) | (class name | var name) TODO:あとで実装
-    symbol(JackLexer::DOT)
-    identifier # subroutineName
-    symbol(JackLexer::L_ROUND_BRACKET)
-    compile_expression_list
-    symbol(JackLexer::R_ROUND_BRACKET)
+    if next_token_match?(JackLexer::L_ROUND_BRACKET)
+      identifier # subroutineName
+      symbol(JackLexer::L_ROUND_BRACKET)
+      compile_expression_list
+      symbol(JackLexer::R_ROUND_BRACKET)
+    else
+      #  (class name | var name) TODO:あとで実装
+      var_name
+
+      symbol(JackLexer::DOT)
+      identifier # subroutineName
+      symbol(JackLexer::L_ROUND_BRACKET)
+      compile_expression_list
+      symbol(JackLexer::R_ROUND_BRACKET)
+    end
   end
 
   def compile_return
     push_non_terminal("returnStatement")
 
     keyword(JackLexer::RETURN)
-    # expression? TODO:あとで実装
-    symbol(JackLexer::SEMICOLON)
+
+    if match?(JackLexer::SEMICOLON)
+      symbol(JackLexer::SEMICOLON)
+    else
+      compile_expression
+      symbol(JackLexer::SEMICOLON)
+    end
 
     push_non_terminal("/returnStatement")
   end
@@ -227,6 +250,18 @@ class CompilationEngine
     end
     push_non_terminal("/ifStatement")
   end
+
+  def compile_while
+    push_non_terminal("whileStatement")
+    match(JackLexer::WHILE)
+    symbol(JackLexer::L_ROUND_BRACKET)
+    compile_expression
+    symbol(JackLexer::R_ROUND_BRACKET)
+    symbol(JackLexer::L_BRACE)
+    compile_statements
+    symbol(JackLexer::R_BRACE)
+    push_non_terminal("/whileStatement")
+  end
   
   def statement
     case @token.token
@@ -238,8 +273,10 @@ class CompilationEngine
       compile_return
     when JackLexer::IF
       compile_if
+    when JackLexer::WHILE
+      compile_while
     else
-      raise StandardError
+      raise StandardError, "token: #{@token.token}"
     end
   end
 
@@ -279,8 +316,12 @@ class CompilationEngine
   end
 
   def current_token_include?(texts)
-    puts "current_token_include: args=#{texts}, token=#{@token.token}"
+#    puts "current_token_include: args=#{texts}, token=#{@token.token}"
     texts&.include?(@token.token)
+  end
+
+  def next_token_match?(candidacy)
+    @lexer.next_token.token == candidacy
   end
 
   def push_non_terminal(tag)
@@ -288,33 +329,9 @@ class CompilationEngine
   end
 
   def output_tokens(output)
-    space_count = 0
-    nonterminal_stack = []
-
     @tokens.each do |token|
-      unless token.terminal
-        if nonterminal_stack.last == token.token
-          nonterminal_stack.pop
-          space_count -= 1 # 出力する前にインデントを上げる
-
-          output.puts(add_indent_to(token.to_xml, space_count))
-          puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
-        else
-          output.puts(add_indent_to(token.to_xml, space_count))
-          puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
-
-          nonterminal_stack.push(token.token)
-          space_count += 1  # 出力してからインデントを下げる
-        end
-      else
-        output.puts(add_indent_to(token.to_xml, space_count))
-        puts "tokens : #{add_indent_to(token.to_xml, space_count)}"
-      end
+      output.puts((token.to_xml))
+      puts "tokens : #{(token.to_xml)}"
     end
-  end
-
-  def add_indent_to(tag, space_count)
-    space = " " * (2 * space_count)
-    "#{space}#{tag}"
   end
 end
