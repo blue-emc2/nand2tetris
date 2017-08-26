@@ -29,8 +29,8 @@ module JackConstants
   SEMICOLON = ';'
   L_ROUND_BRACKET = '('
   R_ROUND_BRACKET = ')'
-  L_SQUARE_BRACKETS = '['
-  R_SQUARE_BRACKETS = ']'
+  L_SQUARE_BRACKET = '['
+  R_SQUARE_BRACKET = ']'
   EQ = '='
   DOT = '.'
   COMMA = ','
@@ -64,5 +64,6 @@ module JackConstants
   KEYWORD_CONSTANT = [TRUE, FALSE, NULL, THIS]
   STATEMENT_WORDS = [LET, WHILE, DO, RETURN, IF]
   OPERATIONS = %w(+ - * & | < > =)
+  BRACKETS = %w({ } [ ] ( ))
 
 end
