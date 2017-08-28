@@ -45,6 +45,11 @@ class CompilationEngine
       type
       var_name
       # (',' varName)* TODO:あとで実装
+      while(match?(JackLexer::COMMA))
+        symbol(JackLexer::COMMA)
+        var_name
+      end
+
       symbol(JackLexer::SEMICOLON)
       push_non_terminal("/classVarDec")
     end
@@ -77,8 +82,17 @@ class CompilationEngine
 
   def compile_parameter_list
     push_non_terminal("parameterList")
-    # (t)?
-    # t = (type varName) (',' type varName)*
+    # ((type varName) (',' type varName)*)?
+    if current_token_include?(JackLexer::TYPES)
+			type
+      var_name
+
+      while(match?(JackLexer::COMMA))
+        symbol(JackLexer::COMMA)
+        type
+        var_name
+      end
+		end
     push_non_terminal("/parameterList")
   end
 
@@ -159,9 +173,11 @@ class CompilationEngine
     push_non_terminal("expressionList")
 
     unless match?(JackLexer::R_ROUND_BRACKET)
-      puts "@@@ #{@token.token}"
       compile_expression
-    # (',' expression)* TODO あとで実装する
+      while match?(JackLexer::COMMA)
+        symbol(JackLexer::COMMA)
+        compile_expression
+      end
     end
 
     push_non_terminal("/expressionList")
