@@ -156,18 +156,6 @@ class CompilationEngine
     push_non_terminal("/letStatement")
   end
 
-  def compile_expression
-    push_non_terminal("expression")
-    compile_term
-
-    # (op term)*
-    while(current_token_include?(JackLexer::OPERATIONS))
-      push_tokens_and_advance
-      compile_term
-    end
-    push_non_terminal("/expression")
-  end
-
   # (expression (',' expression)* )?
   def compile_expression_list
     push_non_terminal("expressionList")
@@ -191,6 +179,18 @@ class CompilationEngine
     push_non_terminal("/statements")
   end
 
+  def compile_expression
+    push_non_terminal("expression")
+    compile_term
+
+    # (op term)*
+    while(current_token_include?(JackLexer::OPERATIONS))
+      push_tokens_and_advance
+      compile_term
+    end
+    push_non_terminal("/expression")
+  end
+
   def compile_term
     push_non_terminal("term")
     case @token.token
@@ -198,8 +198,15 @@ class CompilationEngine
       push_tokens_and_advance
     when /[:digit:]/
       push_tokens_and_advance
-    when JackLexer::BRACKETS
-      raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
+    when JackLexer::L_ROUND_BRACKET
+      symbol(JackLexer::L_ROUND_BRACKET)
+      compile_expression
+      symbol(JackLexer::R_ROUND_BRACKET)
+      #raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
+    when JackLexer::NEGATIVE, JackLexer::TILDE
+      # unaryOp term
+      symbol(JackLexer::NEGATIVE)
+      compile_term
     else
       if next_token_match?(JackLexer::DOT)
         subroutine_call
@@ -209,6 +216,10 @@ class CompilationEngine
         symbol(JackLexer::L_SQUARE_BRACKET)
         compile_expression
         symbol(JackLexer::R_SQUARE_BRACKET)
+      elsif next_token_match?(JackLexer::L_ROUND_BRACKET)
+        symbol(JackLexer::L_ROUND_BRACKET)
+        compile_expression
+        symbol(JackLexer::R_ROUND_BRACKET)
       else
         identifier
       end
@@ -357,9 +368,9 @@ class CompilationEngine
   end
 
   def output_tokens(output)
-    @tokens.each do |token|
-      output.puts((token.to_xml))
-      puts "tokens : #{(token.to_xml)}"
+    @tokens.each.with_index(1) do |token, i|
+      output.puts(token.to_xml)
+      puts "#{i} : tokens = #{(token.to_xml)}"
     end
   end
 end

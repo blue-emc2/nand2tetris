@@ -34,6 +34,8 @@ module JackConstants
   EQ = '='
   DOT = '.'
   COMMA = ','
+  NEGATIVE = "-"
+  TILDE = "~"
 
   KEYWORDS = [
     CLASS,
