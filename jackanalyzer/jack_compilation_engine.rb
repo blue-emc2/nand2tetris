@@ -201,8 +201,19 @@ class CompilationEngine
     when JackLexer::BRACKETS
       raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
     else
-      identifier
+      if next_token_match?(JackLexer::DOT)
+        subroutine_call
+      elsif next_token_match?(JackLexer::L_SQUARE_BRACKET)
+        # varName [ expression ]
+        var_name
+        symbol(JackLexer::L_SQUARE_BRACKET)
+        compile_expression
+        symbol(JackLexer::R_SQUARE_BRACKET)
+      else
+        identifier
+      end
     end
+
     push_non_terminal("/term")
   end
 
@@ -337,6 +348,7 @@ class CompilationEngine
   end
 
   def next_token_match?(candidacy)
+    puts "next_token: #{@lexer.next_token.token}, current: #{@token.token}, candidacy: #{candidacy}"
     @lexer.next_token.token == candidacy
   end
 
