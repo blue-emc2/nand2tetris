@@ -202,7 +202,6 @@ class CompilationEngine
       symbol(JackLexer::L_ROUND_BRACKET)
       compile_expression
       symbol(JackLexer::R_ROUND_BRACKET)
-      #raise SyntaxError, "expecting #{@token.token}, found #{text.inspect}"
     when JackLexer::NEGATIVE, JackLexer::TILDE
       # unaryOp term
       symbol(JackLexer::NEGATIVE)
