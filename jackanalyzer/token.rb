@@ -6,7 +6,8 @@ class Token
     @text = text
 
     if terminal
-      @tag_start, @token, @tag_end = text.chomp.split 
+      # xml形式のtextを要素と内容に分解する
+      @tag_start, @token, @tag_end = text.chomp.split(%r((<.+>)(.+)(<\/.+>))).reject(&:empty?).map(&:strip)
     else
       @token = text.delete("/")
     end
