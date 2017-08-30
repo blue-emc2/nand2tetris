@@ -42,7 +42,7 @@ class JackTokenizer
   end
 
   def token_type
-    if @current_token =~ /\A\".+\"\Z/
+    if @current_token.include?("\"")
       :stringConstant
     elsif @current_token =~ /\A\d+/
       :integerConstant
