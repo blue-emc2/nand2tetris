@@ -318,10 +318,6 @@ class CompilationEngine
     end
   end
 
-  # アルファベット、数字、アンダースコアの文字列
-  def identifier?
-  end
-
   def keyword(text)
     match(text)
   end
@@ -370,7 +366,7 @@ class CompilationEngine
   def output_tokens(output)
     @tokens.each.with_index(1) do |token, i|
       output.puts(token.to_xml)
-      puts "#{i} : tokens = #{(token.to_xml)}"
+      puts "#{i} : tokens = #{token.to_xml}"
     end
   end
 end
