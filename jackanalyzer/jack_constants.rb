@@ -65,7 +65,7 @@ module JackConstants
   SUBROUTINE_KEYWORDS = [CONSTRUCTOR, FUNCTION, METHOD]
   KEYWORD_CONSTANT = [TRUE, FALSE, NULL, THIS]
   STATEMENT_WORDS = [LET, WHILE, DO, RETURN, IF]
-  OPERATIONS = %w(+ - * & | < > = /)
+  OPERATIONS = %w(+ - * & | < > = / &lt; &amp; &gt; &quot;) # 最後のlt以降は構文解析時に一度XMLにしており記号の意味を保つためエスケープする必要がある
   BRACKETS = %w({ } [ ] ( ))
 
 end
