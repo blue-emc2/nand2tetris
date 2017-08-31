@@ -196,7 +196,7 @@ class CompilationEngine
     case @token.token
     when JackLexer::KEYWORD_CONSTANT
       push_tokens_and_advance
-    when /[:digit:]/
+    when /[[:digit:]]/
       push_tokens_and_advance
     when JackLexer::L_ROUND_BRACKET
       symbol(JackLexer::L_ROUND_BRACKET)
@@ -204,7 +204,7 @@ class CompilationEngine
       symbol(JackLexer::R_ROUND_BRACKET)
     when JackLexer::NEGATIVE, JackLexer::TILDE
       # unaryOp term
-      symbol(JackLexer::NEGATIVE)
+      symbol(match?(JackLexer::NEGATIVE) ? JackLexer::NEGATIVE : JackLexer::TILDE)
       compile_term
     else
       if next_token_match?(JackLexer::DOT)
