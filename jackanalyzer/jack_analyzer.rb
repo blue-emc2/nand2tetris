@@ -2,28 +2,30 @@
 # メインプログラム
 #
 
-require './jackanalyzer/compilation_engine.rb'
+require_relative "jack_tokenizer"
+require_relative "jack_compilation_engine"
 
 class JackAnalyzer
 
   def run(argv)
+    exit 1 unless argv.first
+
     source = argv.first
     dir_name = File.dirname(source)
-    if argv[1]
-      base_name = argv[1]
-    else
-      base_name = File.basename(source, ".*")
-    end
+    base_name = File.basename(source, ".*")
 
-    output_directory = "#{dir_name}/#{base_name}Test/"
-    output_file_name = "#{base_name}.xml"
-
-    if File.directory?(source)
-      Dir.mkdir(output_directory) unless Dir.exist?(output_directory)
-      jack_files = Dir.glob("#{source}/*.jack").map{|path| path.gsub("//", "/") }
-    else
+    if File.file?(argv.first)
+      output_directory = "#{dir_name}T/"
+      output_file_name = "#{base_name}.xml"
       jack_files = [source]
+    else
+      output_directory = "#{dir_name}/#{base_name}T/"   # 10/SquareT/...
+      output_file_name = "#{base_name}.xml"
+      # 引数がdirectoryだった場合、指定したdirectory内のjackファイル名を全て取得する
+      jack_files = Dir.glob("#{source}/*.jack").map{|path| path.gsub("//", "/") }
     end
+
+    Dir.mkdir(output_directory) unless Dir.exist?(output_directory)
 
     puts "#{__method__} output_file: #{output_directory}, #{output_file_name}, #{jack_files}"
 
@@ -53,12 +55,14 @@ class JackAnalyzer
                   puts "error: #{type.inspect}, #{token.inspect}"
                 end
 
-        # puts "type: #{type}"
-        # puts "token: #{token}"
         writer.puts("<#{type}> #{token} </#{type}>\r")
       end
 
       writer.puts("</tokens>\r")
+      writer.flush
+
+      compiled_file_writer = File.open("#{output_directory}#{File.basename(jack_file, ".*")}.xml", "w")
+      CompilationEngine.new(writer.path, compiled_file_writer)
     end
   end
 end
