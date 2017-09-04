@@ -1,14 +1,17 @@
 require_relative "jack_lexer"
 require_relative "token"
+require_relative "symbol_table"
 
 class CompilationEngine
 
   class SymtaxError < StandardError; end
 
   def initialize(input, output)
+    @output = output
     @lexer = JackLexer.new(File.readlines(input))
     @token = @lexer.current_token
     @tokens = []
+    @symbol_table = SymbolTable.new
 
     begin
       compile_class()
@@ -17,7 +20,7 @@ class CompilationEngine
     end
       
     puts "-------------------"
-    output_tokens(output)
+    output_tokens
   end
 
   def compile_class
@@ -44,7 +47,7 @@ class CompilationEngine
       push_tokens_and_advance
       type
       var_name
-      # (',' varName)* TODO:あとで実装
+
       while(match?(JackLexer::COMMA))
         symbol(JackLexer::COMMA)
         var_name
@@ -362,9 +365,9 @@ class CompilationEngine
     @tokens << Token.new(tag, terminal: false)
   end
 
-  def output_tokens(output)
+  def output_tokens
     @tokens.each.with_index(1) do |token, i|
-      output.puts(token.to_xml)
+      #@output.puts(token.to_xml)
       puts "#{i} : tokens = #{token.to_xml}"
     end
   end
