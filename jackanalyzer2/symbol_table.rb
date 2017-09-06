@@ -5,5 +5,9 @@ class SymbolTable
     @subroutine_scope = {}
   end
 
+  def to_xml
+    "hoge"
+  end
+
 end
 

@@ -326,6 +326,13 @@ class CompilationEngine
 
   def identifier
     push_tokens_and_advance
+    symbol_table
+  end
+
+  def symbol_table
+    push_non_terminal("symbolTable")
+    @tokens << @symbol_table
+    push_non_terminal("/symbolTable")
   end
 
   def symbol(text)
