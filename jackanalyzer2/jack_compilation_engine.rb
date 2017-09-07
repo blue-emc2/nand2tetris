@@ -44,9 +44,10 @@ class CompilationEngine
   def compile_class_var_dec
     while(current_token_include?([JackLexer::STATIC, JackLexer::FIELD]))
       push_non_terminal("classVarDec")
-      push_tokens_and_advance
-      type
-      var_name
+      kind = push_tokens_and_advance
+      _type = type
+      name = var_name
+      @symbol_table.define(name.token, _type.token, kind.token)
 
       while(match?(JackLexer::COMMA))
         symbol(JackLexer::COMMA)
@@ -118,7 +119,7 @@ class CompilationEngine
       return
     end
     
-    identifier # class name TODO:クラス名検索
+    identifier
   end
 
   def var_name
@@ -330,9 +331,7 @@ class CompilationEngine
   end
 
   def symbol_table
-    push_non_terminal("symbolTable")
     @tokens << @symbol_table
-    push_non_terminal("/symbolTable")
   end
 
   def symbol(text)
