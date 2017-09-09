@@ -44,10 +44,13 @@ class CompilationEngine
   def compile_class_var_dec
     while(current_token_include?([JackLexer::STATIC, JackLexer::FIELD]))
       push_non_terminal("classVarDec")
-      kind = push_tokens_and_advance
+      kind = @token.token
+      push_tokens_and_advance
       _type = type
       name = var_name
-      @symbol_table.define(name.token, _type.token, kind.token)
+
+      @symbol_table.define(name, _type, kind)
+      push_symbol_table_to_tokens
 
       while(match?(JackLexer::COMMA))
         symbol(JackLexer::COMMA)
@@ -115,8 +118,9 @@ class CompilationEngine
 
   def type
     if JackLexer::TYPES.include?(@token)
+      type = @token.token
       push_tokens_and_advance
-      return
+      return type
     end
     
     identifier
@@ -326,11 +330,12 @@ class CompilationEngine
   end
 
   def identifier
+    _identifier = @token.token # 返却用identifier advance呼ぶと次に進むのでとっておく
     push_tokens_and_advance
-    symbol_table
+    _identifier
   end
 
-  def symbol_table
+  def push_symbol_table_to_tokens
     @tokens << @symbol_table
   end
 
@@ -348,7 +353,7 @@ class CompilationEngine
   end
 
   def match?(text)
-    puts "match? token: #{@token.inspect}, text: #{text.inspect}"
+#    puts "match? token: #{@token.inspect}, text: #{text.inspect}"
     @token.token == text
   end
 
@@ -363,7 +368,7 @@ class CompilationEngine
   end
 
   def next_token_match?(candidacy)
-    puts "next_token: #{@lexer.next_token.token}, current: #{@token.token}, candidacy: #{candidacy}"
+#    puts "next_token: #{@lexer.next_token.token}, current: #{@token.token}, candidacy: #{candidacy}"
     @lexer.next_token.token == candidacy
   end
 
@@ -372,9 +377,18 @@ class CompilationEngine
   end
 
   def output_tokens
+    tmp_token = nil
     @tokens.each.with_index(1) do |token, i|
       #@output.puts(token.to_xml)
-      puts "#{i} : tokens = #{token.to_xml}"
+      if token.kind_of?(SymbolTable)
+        puts "#{i} : tokens = #{token.to_xml(tmp_token.token)}"
+      else
+        puts "#{i} : tokens = #{token.to_xml}"
+
+        if token.text.include?("identifier")
+          tmp_token = token
+        end
+      end
     end
   end
 end

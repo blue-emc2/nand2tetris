@@ -1,6 +1,6 @@
 class Token
 
-  attr_accessor :token, :terminal
+  attr_accessor :token, :terminal, :text
 
   def initialize(text, terminal: true)
     @text = text
