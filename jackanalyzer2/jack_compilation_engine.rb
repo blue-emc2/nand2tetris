@@ -50,11 +50,13 @@ class CompilationEngine
       name = var_name
 
       @symbol_table.define(name, _type, kind)
-      push_symbol_table_to_tokens
+      push_symbol_table_to_tokens(name)
 
       while(match?(JackLexer::COMMA))
         symbol(JackLexer::COMMA)
-        var_name
+        name = var_name
+        @symbol_table.define(name, _type, kind)
+        push_symbol_table_to_tokens(name)
       end
 
       symbol(JackLexer::SEMICOLON)
@@ -335,10 +337,6 @@ class CompilationEngine
     _identifier
   end
 
-  def push_symbol_table_to_tokens
-    @tokens << @symbol_table
-  end
-
   def symbol(text)
     match(text)
   end
@@ -376,19 +374,14 @@ class CompilationEngine
     @tokens << Token.new(tag, terminal: false)
   end
 
+  def push_symbol_table_to_tokens(name)
+    @tokens << Token.new(@symbol_table.to_xml(name), terminal: false)
+  end
+
   def output_tokens
-    tmp_token = nil
     @tokens.each.with_index(1) do |token, i|
       #@output.puts(token.to_xml)
-      if token.kind_of?(SymbolTable)
-        puts "#{i} : tokens = #{token.to_xml(tmp_token.token)}"
-      else
-        puts "#{i} : tokens = #{token.to_xml}"
-
-        if token.text.include?("identifier")
-          tmp_token = token
-        end
-      end
+      puts "#{i} : tokens = #{token.to_xml}"
     end
   end
 end
