@@ -67,7 +67,13 @@ class CompilationEngine
   def compile_subroutine
     while(current_token_include?(JackLexer::SUBROUTINE_KEYWORDS))
       push_non_terminal("subroutineDec")
+      kind = @token.token
       push_tokens_and_advance
+      _type = type
+      name = var_name
+
+      @symbol_table.define(name, _type, kind)
+      push_symbol_table_to_tokens(name)
 
       if match?(JackLexer::VOID)
         push_tokens_and_advance
@@ -93,13 +99,17 @@ class CompilationEngine
     push_non_terminal("parameterList")
     # ((type varName) (',' type varName)*)?
     if current_token_include?(JackLexer::TYPES)
-			type
-      var_name
+			_type = type
+      name = var_name
+      @symbol_table.define(name, _type, SymbolTable::ARGUMENT)
+      push_symbol_table_to_tokens(name)
 
       while(match?(JackLexer::COMMA))
         symbol(JackLexer::COMMA)
-        type
-        var_name
+        _type = type
+        name = var_name
+        @symbol_table.define(name, _type, SymbolTable::ARGUMENT)
+        push_symbol_table_to_tokens(name)
       end
 		end
     push_non_terminal("/parameterList")
@@ -371,7 +381,7 @@ class CompilationEngine
   end
 
   def push_non_terminal(tag)
-    @tokens << Token.new(tag, terminal: false)
+    @tokens << Token.new("<#{tag}>", terminal: false)
   end
 
   def push_symbol_table_to_tokens(name)
