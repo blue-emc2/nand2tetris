@@ -19,7 +19,7 @@ class Token
     if @terminal
       "#{@tag_start} #{@token} #{@tag_end}"
     else
-      "<#{@text}>"
+      @text
     end
   end
 end

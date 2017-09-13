@@ -14,35 +14,36 @@ class SymbolTable
   end
 
   def kind_of(name)
-    k = scope(name)&.kind
+    k = scope(name).kind
     k.nil? ? NONE : k
+  end
 
+  def type_of(name)
+    scope(name).type
+  end
 
+  def index_of(name)
+    scope(name).index
+  end
+
+  def scope(name)
     if @class_scope.has_key?(name)
-      @class_scope[name].kind
+      @class_scope[name]
     elsif @subroutine_scope.has_key?(name)
-      @subroutine_scope[name].kind
+      @subroutine_scope[name]
     else
       NONE
     end
   end
 
-  def type_of(name)
-    scope(name)&.type
-  end
-
-  def index_of(name)
-    scope(name)&.index
-  end
-
   def to_xml(name)
-    v = @class_scope[name]
     <<~EOF
       <symbolTable>
-        <name> #{v.name} </name>
-        <category>  </category>
-        <index> 0 </index>
-        <scope>  </scope>
+        <name> #{name} </name>
+        <kind> #{kind_of(name)} </kind>
+        <type> #{type_of(name)} </type>
+        <index> </index>
+        <scope> </scope>
       </symbolTable>
     EOF
   end
