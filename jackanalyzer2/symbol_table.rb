@@ -8,6 +8,7 @@ class SymbolTable
   end
 
   def define(name, type, kind)
+    puts "define name:#{name}, type:#{type}, kind:#{kind}"
     v = Variable.new(name, type, kind)
     # TODO: kindをみてどちらかのハッシュかを判断する
     @class_scope[name] = v

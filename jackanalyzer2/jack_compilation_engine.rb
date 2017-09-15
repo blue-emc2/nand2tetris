@@ -69,20 +69,19 @@ class CompilationEngine
       push_non_terminal("subroutineDec")
       kind = @token.token
       push_tokens_and_advance
-      _type = type
-      name = var_name
-
-      @symbol_table.define(name, _type, kind)
-      push_symbol_table_to_tokens(name)
 
       if match?(JackLexer::VOID)
+        _type = @token.token
         push_tokens_and_advance
       else 
-        type
+        _type = type
       end
 
       # subroutineName
-      identifier
+      name = identifier
+
+      @symbol_table.define(name, _type, kind)
+      push_symbol_table_to_tokens(name)
 
       symbol(JackLexer::L_ROUND_BRACKET)
 
